@@ -3076,61 +3076,11 @@ static struct msm_vfe_callback msm_vfe_s = {
 	.vfe_free = msm_vfe_sync_free,
 };
 
-#if defined (CONFIG_MT9T113)	//for muscat //improve for preivew time
-int __msm_open_thread(void *data)
-{
-	int rc;
-	struct msm_sync *sync = data;
-
-	msm_camvfe_fn_init(&sync->vfefn, sync);
-	if (sync->vfefn.vfe_init) {
-		sync->pp_frame_avail = 0;
-		sync->get_pic_abort = 0;
-		rc = msm_camio_sensor_clk_on(sync->pdev);
-		if (rc < 0) {
-			pr_err("%s: setting sensor clocks failed: %d\n",
-				__func__, rc);
-			goto msm_open_thread_done;
-		}
-		rc = sync->sctrl.s_init(sync->sdata);
-		if (rc < 0) {
-			pr_err("%s: sensor init failed: %d\n",
-				__func__, rc);
-			goto msm_open_thread_done;
-		}
-		rc = sync->vfefn.vfe_init(&msm_vfe_s,
-			sync->pdev);
-		if (rc < 0) {
-			pr_err("%s: vfe_init failed at %d\n",
-				__func__, rc);
-			goto msm_open_thread_done;
-		}
-	} else {
-		pr_err("%s: no sensor init func\n", __func__);
-		rc = -ENODEV;
-		goto msm_open_thread_done;
-	}
-	msm_camvpe_fn_init(&sync->vpefn, sync);
-
-	spin_lock_init(&sync->abort_pict_lock);
-	if (rc >= 0) {
-		msm_region_init(sync);
-		if (sync->vpefn.vpe_reg)
-			sync->vpefn.vpe_reg(&msm_vpe_s);
-		sync->unblock_poll_frame = 0;
-	}
-
-      msm_open_thread_done:
-	return rc;
-}
-#endif
-static int __msm_open(struct msm_sync *sync, const char *const apps_id,
+static int __msm_open(struct msm_cam_device *pmsm, const char *const apps_id,
 			int is_controlnode)
 {
 	int rc = 0;
-#if defined (CONFIG_MT9T113)	//for muscat //improve for preivew time
-	struct task_struct *p;
-#endif
+	struct msm_sync *sync = pmsm->sync;
 
 	mutex_lock(&sync->lock);
 	if (sync->apps_id && strcmp(sync->apps_id, apps_id)
@@ -3149,7 +3099,6 @@ static int __msm_open(struct msm_sync *sync, const char *const apps_id,
 	if (!sync->core_powered_on && !is_controlnode) {
 		wake_lock(&sync->wake_lock);
 
-#if !defined (CONFIG_MT9T113) // do not apply gelato camera (not stable for gelato)
 		msm_camvfe_fn_init(&sync->vfefn, sync);
 		if (sync->vfefn.vfe_init) {
 			sync->pp_frame_avail = 0;
@@ -3158,14 +3107,14 @@ static int __msm_open(struct msm_sync *sync, const char *const apps_id,
 			if (rc < 0) {
 				pr_err("%s: setting sensor clocks failed: %d\n",
 					__func__, rc);
-				goto msm_open_done;
+				goto msm_open_err;
 			}
 			rc = sync->sctrl.s_init(sync->sdata);
 			if (rc < 0) {
 				pr_err("%s: sensor init failed: %d\n",
 					__func__, rc);
 				msm_camio_sensor_clk_off(sync->pdev);
-				goto msm_open_done;
+				goto msm_open_err;
 			}
 			rc = sync->vfefn.vfe_init(&msm_vfe_s,
 				sync->pdev);
@@ -3174,12 +3123,12 @@ static int __msm_open(struct msm_sync *sync, const char *const apps_id,
 					__func__, rc);
 				sync->sctrl.s_release();
 				msm_camio_sensor_clk_off(sync->pdev);
-				goto msm_open_done;
+				goto msm_open_err;
 			}
 		} else {
 			pr_err("%s: no sensor init func\n", __func__);
 			rc = -ENODEV;
-			goto msm_open_done;
+			goto msm_open_err;
 		}
 		msm_camvpe_fn_init(&sync->vpefn, sync);
 
@@ -3192,17 +3141,15 @@ static int __msm_open(struct msm_sync *sync, const char *const apps_id,
 			sync->unblock_poll_pic_frame = 0;
 		}
 		sync->core_powered_on = 1;
-#else
-		p = kthread_run(__msm_open_thread, sync, "__msm_open_thread");
-		sync->core_powered_on = 1;
-		msleep(100);
-		if (IS_ERR(p))
-    		    rc = PTR_ERR(p);
-#endif
 	}
 	sync->opencnt++;
 
 msm_open_done:
+	mutex_unlock(&sync->lock);
+	return rc;
+
+msm_open_err:
+	atomic_set(&pmsm->opened, 0);
 	mutex_unlock(&sync->lock);
 	return rc;
 }
@@ -3229,7 +3176,7 @@ static int msm_open_common(struct inode *inode, struct file *filep,
 		return rc;
 	}
 
-	rc = __msm_open(pmsm->sync, MSM_APPS_ID_PROP, is_controlnode);
+	rc = __msm_open(pmsm, MSM_APPS_ID_PROP, is_controlnode);
 	if (rc < 0)
 		return rc;
 	filep->private_data = pmsm;
