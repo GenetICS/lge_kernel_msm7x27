@@ -241,6 +241,7 @@ struct msm_sync {
 	 */
 	struct msm_device_queue frame_q;
 	int unblock_poll_frame;
+	int unblock_poll_pic_frame;
 
 	/* This queue contains snapshot frames.  It is accessed by the DSP (in
 	 * interrupt context, and by the control thread.
@@ -282,6 +283,8 @@ struct msm_sync {
 	spinlock_t pmem_frame_spinlock;
 	spinlock_t pmem_stats_spinlock;
 	spinlock_t abort_pict_lock;
+	int snap_count;
+	int thumb_count;
 };
 
 #define MSM_APPS_ID_V4L2 "msm_v4l2"
@@ -358,22 +361,7 @@ static inline int msm_flash_ctrl(
 }
 #endif
 
-/* Below functions are added for V4L2 kernel APIs */
-struct msm_v4l2_driver {
-	struct msm_sync *sync;
-	int (*open)(struct msm_sync *, const char *apps_id, int);
-	int (*release)(struct msm_sync *);
-	int (*ctrl)(struct msm_sync *, struct msm_ctrl_cmd *);
-	int (*reg_pmem)(struct msm_sync *, struct msm_pmem_info *);
-	int (*get_frame) (struct msm_sync *, struct msm_frame *);
-	int (*put_frame) (struct msm_sync *, struct msm_frame *);
-	int (*get_pict) (struct msm_sync *, struct msm_ctrl_cmd *);
-	unsigned int (*drv_poll) (struct msm_sync *, struct file *,
-				struct poll_table_struct *);
-};
 
-int msm_v4l2_register(struct msm_v4l2_driver *);
-int msm_v4l2_unregister(struct msm_v4l2_driver *);
 
 void msm_camvfe_init(void);
 int msm_camvfe_check(void *);
