@@ -54,7 +54,7 @@ static void mcs6000_late_resume(struct early_suspend *h);
 #endif
 
 
-#define TS_POLLING_TIME 10 /* msec */
+#define TS_POLLING_TIME 1 /* msec */
 #define	TS_SENSE_CH_CNT	21
 
 
