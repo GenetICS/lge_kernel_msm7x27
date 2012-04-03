@@ -787,7 +787,7 @@ static int iface_stat_all_proc_read(char *page, char **num_items_returned,
 	int len;
 	struct iface_stat *iface_entry;
 	const struct net_device_stats *stats;
-	struct rtnl_link_stats64 no_dev_stats = {0};
+	const struct net_device_stats no_dev_stats = {0};
 
 	if (unlikely(module_passive)) {
 		*eof = 1;
