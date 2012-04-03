@@ -38,6 +38,7 @@
 #include <mach/system.h>
 #include <mach/subsystem_notif.h>
 #include <mach/socinfo.h>
+#include <asm/cacheflush.h>
 
 #include "smd_private.h"
 #include "proc_comm.h"
@@ -2435,8 +2436,11 @@ static irqreturn_t smsm_irq_handler(int irq, void *data)
 			modem_queue_start_reset_notify();
 
 		} else if (modm & SMSM_RESET) {
-			if (!cpu_is_msm8960() && !cpu_is_msm8930())
-				apps |= SMSM_RESET;
+
+			pr_err("\nSMSM: Modem SMSM state changed to SMSM_RESET.");
+			apps |= SMSM_RESET;
+			flush_cache_all();
+			outer_flush_all();
 
 #ifdef CONFIG_LGE_HANDLE_MODEM_CRASH
 			printk(KERN_INFO">>>>>\n");
@@ -2456,12 +2460,12 @@ static irqreturn_t smsm_irq_handler(int irq, void *data)
 			smsm_reset_modem(SMSM_SYSTEM_REBOOT);
 #else
 			smsm_reset_modem(SMSM_SYSTEM_DOWNLOAD);
-#endif  
+#endif
 
 			while (1);
 #endif
 
-			pr_err("\nSMSM: Modem SMSM state changed to SMSM_RESET.");
+
 			modem_queue_start_reset_notify();
 
 		} else if (modm & SMSM_INIT) {
