@@ -9,17 +9,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
- *
  */
 
 #include <linux/delay.h>
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/pm_qos_params.h>
+#include <linux/regulator/consumer.h>
 #include <mach/gpio.h>
 #include <mach/board.h>
 #include <mach/camera.h>
@@ -97,17 +93,10 @@
 #define	CAMIO_VFE_CLK_SNAP			122880000
 #define	CAMIO_VFE_CLK_PREV			122880000
 
-#ifdef CONFIG_MSM_NPA_SYSTEM_BUS
-/* NPA Flow IDs */
-#define MSM_AXI_QOS_PREVIEW     MSM_AXI_FLOW_CAMERA_PREVIEW_HIGH
-#define MSM_AXI_QOS_SNAPSHOT    MSM_AXI_FLOW_CAMERA_SNAPSHOT_12MP
-#define MSM_AXI_QOS_RECORDING   MSM_AXI_FLOW_CAMERA_RECORDING_720P
-#else
 /* AXI rates in KHz */
 #define MSM_AXI_QOS_PREVIEW     192000
 #define MSM_AXI_QOS_SNAPSHOT    192000
 #define MSM_AXI_QOS_RECORDING   192000
-#endif
 
 static struct clk *camio_vfe_mdc_clk;
 static struct clk *camio_mdc_clk;
@@ -126,28 +115,31 @@ static struct vreg *vreg_gp2;
 static struct vreg *vreg_lvsw1;
 static struct vreg *vreg_gp6;
 static struct vreg *vreg_gp16;
+static struct regulator *fs_vfe;
+static struct regulator *fs_vpe;
 static struct msm_camera_io_ext camio_ext;
 static struct msm_camera_io_clk camio_clk;
 static struct resource *camifpadio, *csiio;
 void __iomem *camifpadbase, *csibase;
+static uint32_t vpe_clk_rate;
 
 void msm_io_w(u32 data, void __iomem *addr)
 {
 	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
-	writel((data), (addr));
+	writel_relaxed((data), (addr));
 }
 
 void msm_io_w_mb(u32 data, void __iomem *addr)
 {
 	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	wmb();
-	writel((data), (addr));
+	writel_relaxed((data), (addr));
 	wmb();
 }
 
 u32 msm_io_r(void __iomem *addr)
 {
-	uint32_t data = readl(addr);
+	uint32_t data = readl_relaxed(addr);
 	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	return data;
 }
@@ -156,7 +148,7 @@ u32 msm_io_r_mb(void __iomem *addr)
 {
 	uint32_t data;
 	rmb();
-	data = readl(addr);
+	data = readl_relaxed(addr);
 	rmb();
 	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	return data;
@@ -170,7 +162,7 @@ void msm_io_memcpy_toio(void __iomem *dest_addr,
 	u32 *s = (u32 *) src_addr;
 	/* memcpy_toio does not work. Use writel for now */
 	for (i = 0; i < len; i++)
-		writel(*s++, d++);
+		writel_relaxed(*s++, d++);
 }
 
 void msm_io_dump(void __iomem *addr, int size)
@@ -187,7 +179,7 @@ void msm_io_dump(void __iomem *addr, int size)
 			sprintf(p_str, "%08x: ", (u32) p);
 			p_str += 10;
 		}
-		data = readl(p++);
+		data = readl_relaxed(p++);
 		sprintf(p_str, "%08x ", data);
 		p_str += 9;
 		if ((i + 1) % 4 == 0) {
@@ -225,7 +217,7 @@ static void msm_camera_vreg_enable(struct platform_device *pdev)
 	if (vreg_enable(vreg_gp2)) {
 		pr_err("%s: VREG GP2 enable failed\n", __func__);
 		goto gp2_put;
-		}
+	}
 
 	vreg_lvsw1 = vreg_get(NULL, "lvsw1");
 	if (IS_ERR(vreg_lvsw1)) {
@@ -279,6 +271,17 @@ static void msm_camera_vreg_enable(struct platform_device *pdev)
 			goto gp16_put;
 		}
 	}
+
+	fs_vfe = regulator_get(NULL, "fs_vfe");
+	if (IS_ERR(fs_vfe)) {
+		pr_err("%s: Regulator FS_VFE get failed %ld\n", __func__,
+			PTR_ERR(fs_vfe));
+		fs_vfe = NULL;
+	} else if (regulator_enable(fs_vfe)) {
+		pr_err("%s: Regulator FS_VFE enable failed\n", __func__);
+		regulator_put(fs_vfe);
+	}
+
 	return;
 
 gp16_put:
@@ -322,6 +325,10 @@ static void msm_camera_vreg_disable(void)
 		vreg_disable(vreg_gp16);
 		vreg_put(vreg_gp16);
 		vreg_gp16 = NULL;
+	}
+	if (fs_vfe) {
+		regulator_disable(fs_vfe);
+		regulator_put(fs_vfe);
 	}
 }
 
@@ -394,7 +401,7 @@ int msm_camio_clk_enable(enum msm_camio_clk_type clktype)
 	case CAMIO_VPE_CLK:
 		camio_vpe_clk =
 		clk = clk_get(NULL, "vpe_clk");
-		msm_camio_clk_set_min_rate(clk, 150000000);
+		msm_camio_clk_set_min_rate(clk, vpe_clk_rate);
 		break;
 	default:
 		break;
@@ -477,10 +484,10 @@ void msm_camio_clk_rate_set(int rate)
 	clk_set_rate(clk, rate);
 }
 
-void msm_camio_vfe_clk_rate_set(int rate)
+int msm_camio_vfe_clk_rate_set(int rate)
 {
 	struct clk *clk = camio_vfe_clk;
-	clk_set_rate(clk, rate);
+	return clk_set_rate(clk, rate);
 }
 
 void msm_camio_clk_rate_set_2(struct clk *clk, int rate)
@@ -521,11 +528,28 @@ int msm_camio_jpeg_clk_enable(void)
 int msm_camio_vpe_clk_disable(void)
 {
 	msm_camio_clk_disable(CAMIO_VPE_CLK);
+
+	if (fs_vpe) {
+		regulator_disable(fs_vpe);
+		regulator_put(fs_vpe);
+	}
+
 	return 0;
 }
 
-int msm_camio_vpe_clk_enable(void)
+int msm_camio_vpe_clk_enable(uint32_t clk_rate)
 {
+	fs_vpe = regulator_get(NULL, "fs_vpe");
+	if (IS_ERR(fs_vpe)) {
+		pr_err("%s: Regulator FS_VPE get failed %ld\n", __func__,
+			PTR_ERR(fs_vpe));
+		fs_vpe = NULL;
+	} else if (regulator_enable(fs_vpe)) {
+		pr_err("%s: Regulator FS_VPE enable failed\n", __func__);
+		regulator_put(fs_vpe);
+	}
+
+	vpe_clk_rate = clk_rate;
 	msm_camio_clk_enable(CAMIO_VPE_CLK);
 	return 0;
 }
