@@ -172,6 +172,7 @@ header-y += veth.h
 header-y += videotext.h
 header-y += x25.h
 
+
 unifdef-y += acct.h
 unifdef-y += adb.h
 unifdef-y += adfs_fs.h
@@ -406,3 +407,4 @@ header-y += msm_audio_acdb.h
 header-y += android_pmem.h
 header-y += msm_audio_wma.h
 header-y += msm_audio_wmapro.h
+header-y += genlock.h
