@@ -11,4 +11,3 @@
 #define xt_qtaguid_match_info xt_owner_match_info
 
 #endif /* _XT_QTAGUID_MATCH_H */
-
