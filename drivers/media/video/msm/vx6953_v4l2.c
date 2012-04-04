@@ -9,11 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
- *
  */
 
 #include <linux/delay.h>
@@ -185,10 +180,10 @@ struct vx6953_ctrl_t {
 
 	enum edof_mode_t edof_mode;
 
-  unsigned short imgaddr;
+	unsigned short imgaddr;
 
-  struct v4l2_subdev sensor_dev;
-  struct vx6953_format *fmt;
+	struct v4l2_subdev *sensor_dev;
+	struct vx6953_format *fmt;
 };
 
 
@@ -1822,7 +1817,7 @@ struct vx6953_format {
 
 static const struct vx6953_format vx6953_cfmts[] = {
 	{
-	.code   = V4L2_MBUS_FMT_YUYV8_2X8_BE,
+	.code   = V4L2_MBUS_FMT_YUYV8_2X8,
 	.colorspace = V4L2_COLORSPACE_JPEG,
 	.fmt    = 1,
 	.order    = 0,
@@ -4001,7 +3996,7 @@ static int vx6953_g_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 	if (!vx6953_ctrl->fmt) {
 		int ret = vx6953_set_params(client, VX6953_QTR_SIZE_WIDTH,
 						VX6953_QTR_SIZE_HEIGHT,
-						V4L2_MBUS_FMT_YUYV8_2X8_BE);
+						V4L2_MBUS_FMT_YUYV8_2X8);
 		if (ret < 0)
 			return ret;
 	}
@@ -4104,7 +4099,7 @@ probe_fail:
 
 
 static int vx6953_sensor_probe_cb(const struct msm_camera_sensor_info *info,
-    struct v4l2_subdev **sdev, struct msm_sensor_ctrl *s)
+	struct v4l2_subdev *sdev, struct msm_sensor_ctrl *s)
 {
 	int rc = 0;
 	rc = vx6953_sensor_probe(info, s);
@@ -4117,12 +4112,13 @@ static int vx6953_sensor_probe_cb(const struct msm_camera_sensor_info *info,
 		return -ENOMEM;
 	}
 
-	/* probe is successful, create a v4l2 subdevice */
+	/* probe is successful, init a v4l2 subdevice */
 	printk(KERN_DEBUG "going into v4l2_i2c_subdev_init\n");
-	v4l2_i2c_subdev_init(&vx6953_ctrl->sensor_dev, vx6953_client,
+	if (sdev) {
+		v4l2_i2c_subdev_init(sdev, vx6953_client,
 						&vx6953_subdev_ops);
-
-	*sdev = &vx6953_ctrl->sensor_dev;
+		vx6953_ctrl->sensor_dev = sdev;
+	}
 	return rc;
 }
 
