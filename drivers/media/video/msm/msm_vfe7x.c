@@ -9,6 +9,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA.
+ *
  */
 
 #include <linux/msm_adsp.h>
@@ -43,7 +48,7 @@
 
 #define VFE_ADSP_EVENT 0xFFFF
 #define SNAPSHOT_MASK_MODE 0x00000002
-#define MSM_AXI_QOS_PREVIEW	192000
+#define MSM_AXI_QOS_PREVIEW		192000
 #define MSM_AXI_QOS_SNAPSHOT	192000
 
 
@@ -56,10 +61,9 @@ static uint32_t extlen;
 struct mutex vfe_lock;
 static void     *vfe_syncdata;
 static uint8_t vfestopped;
+static struct stop_event stopevent;
 static uint32_t vfetask_state;
 static int cnt;
-
-static struct stop_event stopevent;
 
 unsigned long paddr_s_y;
 unsigned long paddr_s_cbcr;
@@ -301,9 +305,15 @@ static void vfe_7x_release(struct platform_device *pdev)
 	kfree(extdata);
 	extlen = 0;
 
-	/* Release AXI */
-	release_axi_qos();
-	cnt = 0;
+	/* set back the AXI frequency to default */
+//LGE_DEV_PORTING 
+// sleep current issue : Case Number:  00479707
+//update_axi_qos(PM_QOS_DEFAULT_VALUE);
+	if (cnt) {
+		release_axi_qos();                     
+		cnt = 0;
+	}
+//LGE_DEV_END
 }
 
 static int vfe_7x_init(struct msm_vfe_callback *presp,
