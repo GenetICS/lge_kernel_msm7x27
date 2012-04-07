@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Wed Apr  4 01:31:42 2012
+# Sat Apr  7 22:54:42 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -920,7 +920,8 @@ CONFIG_EXTRA_FIRMWARE=""
 # CONFIG_DEBUG_DRIVER is not set
 # CONFIG_DEBUG_DEVRES is not set
 # CONFIG_SYS_HYPERVISOR is not set
-# CONFIG_GENLOCK is not set
+CONFIG_GENLOCK=y
+CONFIG_GENLOCK_MISCDEVICE=y
 # CONFIG_CONNECTOR is not set
 CONFIG_MTD=y
 # CONFIG_MTD_DEBUG is not set
@@ -1619,8 +1620,6 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 CONFIG_FB_BACKLIGHT=y
 # CONFIG_FB_MODE_HELPERS is not set
 # CONFIG_FB_TILEBLITTING is not set
-CONFIG_GENLOCK=y
-
 
 #
 # Frame buffer hardware drivers
