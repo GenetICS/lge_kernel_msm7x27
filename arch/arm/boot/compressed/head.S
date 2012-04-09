@@ -204,6 +204,19 @@ restart:	adr	r0, LC0
 		add	r10, sp, #0x10000
 #else
 		/*
+		 * We might be running at a different address.  We need
+		 * to fix up various pointers.
+		 */
+		sub	r0, r0, r1		@ calculate the delta offset
+		add	r5, r5, r0		@ _start
+		add	r6, r6, r0		@ _edata
+
+#ifndef CONFIG_ZBOOT_ROM
+		/* malloc space is above the relocated stack (64k max) */
+		add	sp, sp, r0
+		add	r10, sp, #0x10000
+#else
+		/*
 		 * With ZBOOT_ROM the bss/stack is non relocatable,
 		 * but someone could still run this code from RAM,
 		 * in which case our reference is _edata.
