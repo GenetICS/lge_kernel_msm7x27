@@ -449,7 +449,7 @@ static void msm7x27_wlan_init(void)
  * 2010-04-18, cleaneye.kim@lge.com
  */
 unsigned pmem_fb_size = 	0x96000;
-unsigned pmem_adsp_size =	0xAE4000;
+unsigned pmem_adsp_size =	0x9DE000;
 
 static void __init msm7x2x_init(void)
 {
