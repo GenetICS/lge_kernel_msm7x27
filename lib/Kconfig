@@ -103,7 +103,7 @@ config LZO_COMPRESS
 config LZO_DECOMPRESS
 	tristate
 
-
+source "lib/xz/Kconfig"
 
 #
 # These all provide a common interface (hence the apparent duplication with
