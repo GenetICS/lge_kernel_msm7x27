@@ -156,19 +156,12 @@ osl_t *
 osl_attach(void *pdev, uint bustype, bool pkttag)
 {
 	osl_t *osh;
+	gfp_t flags;
 
-/* BEGIN: 0005533 mingi.sung@lge.com 2010-03-27 */
-/* MOD 0005533: [WLAN] Fixing WBT issues on Wi-Fi driver */
-/* WBT Fix TD# 248394, 248395 */
-	if(!(osh = kmalloc(sizeof(osl_t), GFP_ATOMIC))){
+	flags = (in_atomic()) ? GFP_ATOMIC : GFP_KERNEL;
+	osh = kzalloc(sizeof(osl_t), flags);
 	ASSERT(osh);
-		return NULL;
-	}
-/* END: 0005533 mingi.sung@lge.com 2010-03-27 */
 
-	bzero(osh, sizeof(osl_t));
-
-	
 	ASSERT(ABS(BCME_LAST) == (ARRAYSIZE(linuxbcmerrormap) - 1));
 
 	osh->magic = OS_HANDLE_MAGIC;
