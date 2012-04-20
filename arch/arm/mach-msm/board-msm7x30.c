@@ -4621,7 +4621,7 @@ static struct mddi_platform_data mddi_pdata = {
 int mdp_core_clk_rate_table[] = {
 	122880000,
 	122880000,
-	122880000,
+	192000000,
 	192000000,
 };
 
@@ -6388,6 +6388,11 @@ static unsigned int msm7x30_sdcc_slot_status(struct device *dev)
 }
 #endif
 
+static void msm_sdcc_sdio_lpm_gpio(struct device *dv, unsigned int active)
+{
+	pr_debug("%s not implemented\n", __func__);
+}
+
 static int msm_sdcc_get_wpswitch(struct device *dv)
 {
 	void __iomem *wp_addr = 0;
@@ -6560,6 +6565,16 @@ static void __init msm7x30_init_mmc(void)
 #ifdef CONFIG_MMC_MSM_SDC2_SUPPORT
 	if (machine_is_msm8x55_svlte_surf())
 		msm7x30_sdc2_data.msmsdcc_fmax =  24576000;
+	if (machine_is_msm8x55_svlte_surf() ||
+			machine_is_msm8x55_svlte_ffa()) {
+		msm7x30_sdc2_data.sdio_lpm_gpio_setup = msm_sdcc_sdio_lpm_gpio;
+#ifdef CONFIG_MMC_MSM_SDIO_SUPPORT
+		msm7x30_sdc2_data.sdiowakeup_irq = MSM_GPIO_TO_INT(68);
+#ifdef CONFIG_MSM_SDIO_AL
+		msm7x30_sdc2_data.is_sdio_al_client = 1;
+#endif
+#endif
+	}
 	sdcc_vreg_data[1].vreg_data = vreg_s3;
 	sdcc_vreg_data[1].level = 1800;
 	msm_add_sdcc(2, &msm7x30_sdc2_data);

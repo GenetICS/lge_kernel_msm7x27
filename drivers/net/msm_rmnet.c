@@ -237,6 +237,9 @@ static __be16 rmnet_ip_type_trans(struct sk_buff *skb, struct net_device *dev)
 	return protocol;
 }
 
+static void smd_net_data_handler(unsigned long arg);
+static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
+
 /* Called in soft-irq context */
 static void smd_net_data_handler(unsigned long arg)
 {
@@ -252,61 +255,53 @@ static void smd_net_data_handler(unsigned long arg)
 		sz = smd_cur_packet_size(p->ch);
 		if (sz == 0) break;
 		if (smd_read_avail(p->ch) < sz) break;
-
-		if (RMNET_IS_MODE_IP(opmode) ? (sz > dev->mtu) :
-						(sz > (dev->mtu + ETH_HLEN))) {
-			pr_err("rmnet_recv() discarding %d len (%d mtu)\n",
-				sz, RMNET_IS_MODE_IP(opmode) ?
-					dev->mtu : (dev->mtu + ETH_HLEN));
-			ptr = 0;
+                skb = dev_alloc_skb(sz + NET_IP_ALIGN);
+	        if (skb == NULL) {
+	            pr_err("rmnet_recv() cannot allocate skb\n");
+		    /* out of memory, reschedule a later attempt */
+		    smd_net_data_tasklet.data = (unsigned long)dev;
+		    tasklet_schedule(&smd_net_data_tasklet);
+		    break;
 		} else {
-			skb = dev_alloc_skb(sz + NET_IP_ALIGN);
-			if (skb == NULL) {
-				pr_err("rmnet_recv() cannot allocate skb\n");
+			skb->dev = dev;
+			skb_reserve(skb, NET_IP_ALIGN);
+			ptr = skb_put(skb, sz);
+			wake_lock_timeout(&p->wake_lock, HZ / 2);
+			if (smd_read(p->ch, ptr, sz) != sz) {
+				pr_err("rmnet_recv() smd lied about avail?!");
+				ptr = 0;
+				dev_kfree_skb_irq(skb);
 			} else {
-				skb->dev = dev;
-				skb_reserve(skb, NET_IP_ALIGN);
-				ptr = skb_put(skb, sz);
-				wake_lock_timeout(&p->wake_lock, HZ / 2);
-				if (smd_read(p->ch, ptr, sz) != sz) {
-					pr_err("rmnet_recv() smd lied about avail?!");
-					ptr = 0;
-					dev_kfree_skb_irq(skb);
-				} else {
-					/* Handle Rx frame format */
-					spin_lock_irqsave(&p->lock, flags);
-					opmode = p->operation_mode;
-					spin_unlock_irqrestore(&p->lock, flags);
-
+				/* Handle Rx frame format */
+				spin_lock_irqsave(&p->lock, flags);
+				opmode = p->operation_mode;
+				spin_unlock_irqrestore(&p->lock, flags);
 					if (RMNET_IS_MODE_IP(opmode)) {
-						/* Driver in IP mode */
-						skb->protocol =
-						  rmnet_ip_type_trans(skb, dev);
-					} else {
-						/* Driver in Ethernet mode */
-						skb->protocol =
-						  eth_type_trans(skb, dev);
-					}
-					if (RMNET_IS_MODE_IP(opmode) ||
-					    count_this_packet(ptr, skb->len)) {
-#ifdef CONFIG_MSM_RMNET_DEBUG
-						p->wakeups_rcv +=
-							rmnet_cause_wakeup(p);
-#endif
-						p->stats.rx_packets++;
-						p->stats.rx_bytes += skb->len;
-					}
-					netif_rx(skb);
+					/* Driver in IP mode */
+					skb->protocol =
+					  rmnet_ip_type_trans(skb, dev);
+				} else {
+					/* Driver in Ethernet mode */
+					skb->protocol =
+					  eth_type_trans(skb, dev);
 				}
-				continue;
+				if (RMNET_IS_MODE_IP(opmode) ||
+				    count_this_packet(ptr, skb->len)) {
+#ifdef CONFIG_MSM_RMNET_DEBUG
+					p->wakeups_rcv +=
+						rmnet_cause_wakeup(p);
+#endif
+					p->stats.rx_packets++;
+					p->stats.rx_bytes += skb->len;
+				}
+				netif_rx(skb);
 			}
+			continue;
 		}
 		if (smd_read(p->ch, ptr, sz) != sz)
 			pr_err("rmnet_recv() smd lied about avail?!");
 	}
 }
-
-static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
 
 static int _rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
 {

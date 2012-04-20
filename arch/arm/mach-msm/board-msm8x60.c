@@ -25,6 +25,7 @@
 
 #include <linux/input/pmic8058-keypad.h>
 #include <linux/pmic8058-pwrkey.h>
+#include <linux/rtc/rtc-pm8058.h>
 #include <linux/pmic8058-vibrator.h>
 #include <linux/leds.h>
 #include <linux/pmic8058-othc.h>
@@ -3160,6 +3161,8 @@ static struct platform_device *early_devices[] __initdata = {
 	&msm_bus_sys_fpb,
 	&msm_bus_cpss_fpb,
 #endif
+	&msm_device_dmov_adm0,
+	&msm_device_dmov_adm1,
 };
 
 #if (defined(CONFIG_MARIMBA_CORE)) && \
@@ -3465,8 +3468,6 @@ static struct platform_device *charm_devices[] __initdata = {
 static struct platform_device *surf_devices[] __initdata = {
 	&msm_device_smd,
 	&msm_device_uart_dm12,
-	&msm_device_dmov_adm0,
-	&msm_device_dmov_adm1,
 #ifdef CONFIG_I2C_QUP
 	&msm_gsbi3_qup_i2c_device,
 	&msm_gsbi4_qup_i2c_device,
@@ -4674,6 +4675,10 @@ static struct resource resources_rtc[] = {
        },
 };
 
+static struct pm8058_rtc_platform_data pm8058_rtc_pdata = {
+	.rtc_alarm_powerup	= false,
+};
+
 static struct pmic8058_led pmic8058_flash_leds[] = {
 	[0] = {
 		.name		= "camera:flash0",
@@ -4820,6 +4825,8 @@ static struct mfd_cell pm8058_subdevs[] = {
 		.id = -1,
 		.num_resources  = ARRAY_SIZE(resources_rtc),
 		.resources      = resources_rtc,
+		.platform_data = &pm8058_rtc_pdata,
+		.data_size = sizeof(pm8058_rtc_pdata),
 	},
 	{
 		.name = "pm8058-tm",
@@ -5806,7 +5813,7 @@ static void __init msm8x60_init_uart12dm(void)
 	writew(1, fpga_mem + 0xEA);
 	/* FPGA_GPIO_CONFIG_118 */
 	writew(1, fpga_mem + 0xEC);
-	dmb();
+	dsb();
 	iounmap(fpga_mem);
 #endif
 }
@@ -5817,6 +5824,8 @@ static void __init msm8x60_init_buses(void)
 	void *gsbi_mem = ioremap_nocache(0x19C00000, 4);
 	/* Setting protocol code to 0x60 for dual UART/I2C in GSBI12 */
 	writel(0x6 << 4, gsbi_mem);
+	/* Ensure protocol code is written before proceeding further */
+	dsb();
 	iounmap(gsbi_mem);
 
 	msm_gsbi3_qup_i2c_device.dev.platform_data = &msm_gsbi3_qup_i2c_pdata;
