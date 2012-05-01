@@ -36,7 +36,7 @@ static struct zram *dev_to_zram(struct device *dev)
 	struct zram *zram = NULL;
 
 	for (i = 0; i < num_devices; i++) {
-		zram = &devices[i];
+		zram = &zram_devices[i];
 		if (disk_to_dev(zram->disk) == dev)
 			break;
 	}
@@ -149,6 +149,15 @@ static ssize_t notify_free_show(struct device *dev,
 		zram_stat64_read(zram, &zram->stats.notify_free));
 }
 
+static ssize_t discard_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct zram *zram = dev_to_zram(dev);
+
+	return sprintf(buf, "%llu\n",
+		zram_stat64_read(zram, &zram->stats.discard));
+}
+
 static ssize_t zero_pages_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -197,6 +206,7 @@ static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
 static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
 static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
 static DEVICE_ATTR(notify_free, S_IRUGO, notify_free_show, NULL);
+static DEVICE_ATTR(discard, S_IRUGO, discard_show, NULL);
 static DEVICE_ATTR(zero_pages, S_IRUGO, zero_pages_show, NULL);
 static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
 static DEVICE_ATTR(compr_data_size, S_IRUGO, compr_data_size_show, NULL);
@@ -210,6 +220,7 @@ static struct attribute *zram_disk_attrs[] = {
 	&dev_attr_num_writes.attr,
 	&dev_attr_invalid_io.attr,
 	&dev_attr_notify_free.attr,
+	&dev_attr_discard.attr,
 	&dev_attr_zero_pages.attr,
 	&dev_attr_orig_data_size.attr,
 	&dev_attr_compr_data_size.attr,

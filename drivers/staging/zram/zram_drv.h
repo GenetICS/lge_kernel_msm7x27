@@ -91,6 +91,7 @@ struct zram_stats {
 	u64 failed_writes;	/* can happen when memory is too low */
 	u64 invalid_io;		/* non-page-aligned I/O requests */
 	u64 notify_free;	/* no. of swap slot free notifications */
+	u64 discard;		/* no. of block discard callbacks */
 	u32 pages_zero;		/* no. of zero filled pages */
 	u32 pages_stored;	/* no. of pages currently stored */
 	u32 good_compress;	/* % of pages with compression ratio<=50% */
@@ -119,7 +120,7 @@ struct zram {
 	struct zram_stats stats;
 };
 
-extern struct zram *devices;
+extern struct zram *zram_devices;
 extern unsigned int num_devices;
 #ifdef CONFIG_SYSFS
 extern struct attribute_group zram_disk_attr_group;

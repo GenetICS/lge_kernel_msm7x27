@@ -33,7 +33,7 @@
 
 /* Globals */
 static int zram_major;
-struct zram *devices;
+struct zram *zram_devices;
 
 /* Module params (documentation at end) */
 unsigned int num_devices;
@@ -171,6 +171,24 @@ out:
 
 	zram->table[index].page = NULL;
 	zram->table[index].offset = 0;
+}
+
+static void zram_discard(struct zram *zram, struct bio *bio)
+{
+	u32 i, npages, index;
+
+	if (unlikely(!zram->init_done))
+		goto out;
+		
+	npages = bio->bi_size / PAGE_SIZE;
+	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
+
+	for (i = 0; i < npages; i++)
+		zram_free_page(zram, index++);
+
+out:
+	zram_stat64_inc(zram, &zram->stats.discard);
+	bio_endio(bio, 0);
 }
 
 static void handle_zero_page(struct page *page)
@@ -445,6 +463,11 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
 		return 0;
 	}
 
+	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
+		zram_discard(zram, bio);
+		return 0;
+	}
+
 	switch (bio_data_dir(bio)) {
 	case READ:
 		ret = zram_read(zram, bio);
@@ -567,7 +590,8 @@ fail:
 	return ret;
 }
 
-void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
+#if defined(CONFIG_SWAP_FREE_NOTIFY)
+static void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
 {
 	struct zram *zram;
 
@@ -575,9 +599,12 @@ void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
 	zram_free_page(zram, index);
 	zram_stat64_inc(zram, &zram->stats.notify_free);
 }
+#endif
 
 static const struct block_device_operations zram_devops = {
+#if defined(CONFIG_SWAP_FREE_NOTIFY)
 	.swap_slot_free_notify = zram_slot_free_notify,
+#endif
 	.owner = THIS_MODULE
 };
 
@@ -628,6 +655,10 @@ static int create_device(struct zram *zram, int device_id)
 	blk_queue_logical_block_size(zram->disk->queue, PAGE_SIZE);
 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
+
+	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
+	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
+	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
 
 	add_disk(zram->disk);
 
@@ -687,14 +718,14 @@ static int __init zram_init(void)
 
 	/* Allocate the device array and initialize each one */
 	pr_info("Creating %u devices ...\n", num_devices);
-	devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
-	if (!devices) {
+	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+	if (!zram_devices) {
 		ret = -ENOMEM;
 		goto unregister;
 	}
 
 	for (dev_id = 0; dev_id < num_devices; dev_id++) {
-		ret = create_device(&devices[dev_id], dev_id);
+		ret = create_device(&zram_devices[dev_id], dev_id);
 		if (ret)
 			goto free_devices;
 	}
@@ -703,8 +734,8 @@ static int __init zram_init(void)
 
 free_devices:
 	while (dev_id)
-		destroy_device(&devices[--dev_id]);
-	kfree(devices);
+		destroy_device(&zram_devices[--dev_id]);
+	kfree(zram_devices);
 unregister:
 	unregister_blkdev(zram_major, "zram");
 out:
@@ -717,7 +748,7 @@ static void __exit zram_exit(void)
 	struct zram *zram;
 
 	for (i = 0; i < num_devices; i++) {
-		zram = &devices[i];
+		zram = &zram_devices[i];
 
 		destroy_device(zram);
 		if (zram->init_done)
@@ -726,7 +757,7 @@ static void __exit zram_exit(void)
 
 	unregister_blkdev(zram_major, "zram");
 
-	kfree(devices);
+	kfree(zram_devices);
 	pr_debug("Cleanup done!\n");
 }
 
