@@ -45,6 +45,8 @@ extern int sysctl_legacy_va_layout;
 /* to align the pointer to the (next) page boundary */
 #define PAGE_ALIGN(addr) ALIGN(addr, PAGE_SIZE)
 
+#define SHOW_MEM_FILTER_NODES   (0x0001u)
+
 /*
  * Linux kernel virtual memory manager primitives.
  * The idea being to have a "virtual" mm in the same way

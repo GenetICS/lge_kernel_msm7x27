@@ -633,6 +633,7 @@ struct signal_struct {
 #endif
 
 	int oom_adj;	/* OOM kill score adjustment (bit shift) */
+        long oom_score_adj;
 };
 
 /* Context switch must be unlocked if interrupts are to be enabled */
