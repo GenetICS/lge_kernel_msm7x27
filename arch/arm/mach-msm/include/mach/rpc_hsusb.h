@@ -81,7 +81,8 @@ int msm_hsusb_detect_chg_type(void);
 #endif
 /* LGE_CHANGE_E [hyunhui.park@lge.com] 2009-04-21 */
 
-#if defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_IMEI)
+#if defined(CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_IMEI) || defined(CONFIG_MACH_LGE)
+#define CONFIG_USB_SUPPORT_LGE_SERIAL_FROM_ARM9_IMEI
 /* Type to hold UE IMEI */
 struct nv_ue_imei_type {
 	/* International Mobile Equipment Identity */

@@ -5,14 +5,6 @@ ifeq ($(CONFIG_USB_GADGET_DEBUG),y)
 	EXTRA_CFLAGS		+= -DDEBUG
 endif
 
-# LGE_CHANGE
-# Add lge usb utility code
-# FIXME: Compilation of this code must be performed
-# earlier than gadget code because of using dynamic debugging macro.
-# 2011-01-18, hyunhui.park@lge.com
-# LG specific
-obj-$(CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET)	+= u_lgeusb.o
-
 obj-$(CONFIG_USB_DUMMY_HCD)	+= dummy_hcd.o
 obj-$(CONFIG_USB_NET2280)	+= net2280.o
 obj-$(CONFIG_USB_AMD5536UDC)	+= amd5536udc.o
@@ -53,15 +45,16 @@ g_printer-objs			:= printer.o
 g_cdc-objs			:= cdc2.o
 g_multi-objs			:= multi.o
 g_hid-objs			:= hid.o
+g_dbgp-objs			:= dbgp.o
 g_nokia-objs			:= nokia.o
 g_webcam-objs			:= webcam.o
+g_android-objs			:= android.o
 
 obj-$(CONFIG_USB_ZERO)		+= g_zero.o
 obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
 obj-$(CONFIG_USB_ETH)		+= g_ether.o
 obj-$(CONFIG_USB_GADGETFS)	+= gadgetfs.o
 obj-$(CONFIG_USB_FUNCTIONFS)	+= g_ffs.o
-obj-$(CONFIG_USB_ETH_FUNCTIONFS)	+= g_eth_ffs.o
 obj-$(CONFIG_USB_FILE_STORAGE)	+= g_file_storage.o
 obj-$(CONFIG_USB_MASS_STORAGE)	+= g_mass_storage.o
 obj-$(CONFIG_USB_G_SERIAL)	+= g_serial.o
@@ -69,25 +62,9 @@ obj-$(CONFIG_USB_G_PRINTER)	+= g_printer.o
 obj-$(CONFIG_USB_MIDI_GADGET)	+= g_midi.o
 obj-$(CONFIG_USB_CDC_COMPOSITE) += g_cdc.o
 obj-$(CONFIG_USB_G_HID)		+= g_hid.o
+obj-$(CONFIG_USB_G_DBGP)	+= g_dbgp.o
 obj-$(CONFIG_USB_G_MULTI)	+= g_multi.o
 obj-$(CONFIG_USB_G_NOKIA)	+= g_nokia.o
 obj-$(CONFIG_USB_G_WEBCAM)	+= g_webcam.o
-obj-$(CONFIG_USB_ANDROID)	+= android.o
-obj-$(CONFIG_USB_QCOM_MAEMO)    += qcom_maemo.o
-obj-$(CONFIG_USB_ANDROID_ACM)	+= f_acm.o u_serial.o
-obj-$(CONFIG_USB_F_SERIAL)	+= f_serial.o u_serial.o
-obj-$(CONFIG_USB_ANDROID_ADB)	+= f_adb.o
-obj-$(CONFIG_USB_ANDROID_MASS_STORAGE)	+= f_mass_storage.o
-obj-$(CONFIG_USB_ANDROID_MTP)	+= f_mtp.o
-obj-$(CONFIG_USB_ANDROID_RNDIS)	+= f_rndis.o u_ether.o
-obj-$(CONFIG_USB_ANDROID_CDC_ECM)	+= f_ecm.o u_ether.o
-obj-$(CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN)	+= f_cdrom_storage.o
-obj-$(CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN)	+= f_charge_only.o
-
-# MSM specific
-obj-$(CONFIG_USB_ANDROID_DIAG)	+= f_diag.o
-obj-$(CONFIG_USB_ANDROID_RMNET)	+= f_rmnet.o
-obj-$(CONFIG_USB_ANDROID_RMNET_SDIO)   += f_rmnet_sdio.o
-
-
+obj-$(CONFIG_USB_G_ANDROID)	+= g_android.o
 

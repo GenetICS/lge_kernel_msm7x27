@@ -86,6 +86,10 @@ struct otg_transceiver;
 struct otg_io_access_ops {
 	int (*read)(struct otg_transceiver *otg, u32 reg);
 	int (*write)(struct otg_transceiver *otg, u32 val, u32 reg);
+#ifdef CONFIG_USB_MULTIPLE_CHARGER_DETECT
+	int (*read_with_reset)(struct otg_transceiver *otg, u32 reg);
+	int (*write_with_reset)(struct otg_transceiver *otg, u32 val, u32 reg);
+#endif
 };
 
 /*

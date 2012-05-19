@@ -324,7 +324,7 @@ static void loopback_disable(struct usb_function *f)
 
 /*-------------------------------------------------------------------------*/
 
-static int __init loopback_bind_config(struct usb_configuration *c)
+static int __ref loopback_bind_config(struct usb_configuration *c)
 {
 	struct f_loopback	*loop;
 	int			status;
