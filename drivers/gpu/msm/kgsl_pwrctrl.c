@@ -126,7 +126,7 @@ static int __gpuclk_store(int max, struct device *dev,
 	if (pwr->pwrlevels[pwr->active_pwrlevel].gpu_freq >
 	    pwr->pwrlevels[pwr->thermal_pwrlevel].gpu_freq)
 		kgsl_pwrctrl_pwrlevel_change(device, pwr->thermal_pwrlevel);
-	else if (!max)
+	else if (!max || (NULL == device->pwrscale.policy))
 		kgsl_pwrctrl_pwrlevel_change(device, i);
 
 done:
@@ -422,8 +422,12 @@ void kgsl_pwrctrl_pwrrail(struct kgsl_device *device, int state)
 		if (!test_and_set_bit(KGSL_PWRFLAGS_POWER_ON,
 			&pwr->power_flags)) {
 			trace_kgsl_rail(device, state);
-			if (pwr->gpu_reg)
-				regulator_enable(pwr->gpu_reg);
+			if (pwr->gpu_reg) {
+				int status = regulator_enable(pwr->gpu_reg);
+				if (status)
+					KGSL_DRV_ERR(device, "regulator_enable "
+							"failed: %d\n", status);
+			}
 		}
 	}
 }
@@ -775,7 +779,9 @@ _slumber(struct kgsl_device *device)
 	case KGSL_STATE_NAP:
 	case KGSL_STATE_SLEEP:
 		del_timer_sync(&device->idle_timer);
-		kgsl_pwrctrl_pwrlevel_change(device, KGSL_PWRLEVEL_NOMINAL);
+		if (!device->pwrctrl.strtstp_sleepwake)
+			kgsl_pwrctrl_pwrlevel_change(device,
+					KGSL_PWRLEVEL_NOMINAL);
 		device->pwrctrl.restore_slumber = true;
 		device->ftbl->suspend_context(device);
 		device->ftbl->stop(device);
