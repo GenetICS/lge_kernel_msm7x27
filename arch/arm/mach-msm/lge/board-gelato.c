@@ -66,7 +66,7 @@
 #ifdef CONFIG_ARCH_MSM7X27
 #include <linux/msm_kgsl.h>
 #endif
-#ifdef CONFIG_USB_ANDROID
+#ifdef CONFIG_USB_G_ANDROID
 #include <linux/usb/android_composite.h>
 #endif
 #include <mach/board_lge.h>
@@ -108,7 +108,7 @@ struct msm_pm_platform_data msm7x27_pm_data[MSM_PM_SLEEP_MODE_NR] = {
 
 /* board-specific usb data definitions */
 /* QCT originals are in device_lge.c, not here */
-#ifdef CONFIG_USB_ANDROID
+#ifdef CONFIG_USB_G_ANDROID
 /* LGE_CHANGE
  * Currently, LG Android host driver has 2 USB bind orders as following;
  * - Android Platform : MDM + DIAG + GPS + UMS + ADB
@@ -401,7 +401,27 @@ struct android_usb_platform_data android_usb_pdata = {
 	.serial_number = "LG_ANDROID_P690_GB_",
 };
 
-#endif /* CONFIG_USB_ANDROID */
+static int __init board_serialno_setup(char *serialno)
+{
+	int i;
+	char *src = serialno;
+
+	/* create a fake MAC address from our serial number.
+	 * first byte is 0x02 to signify locally administered.
+	 */
+	rndis_pdata.ethaddr[0] = 0x02;
+	for (i = 0; *src; i++) {
+		/* XOR the USB serial across the remaining bytes */
+		rndis_pdata.ethaddr[i % (ETH_ALEN - 1) + 1] ^= *src++;
+	}
+
+	android_usb_pdata.serial_number = serialno;
+	return 1;
+}
+__setup("androidboot.serialno=", board_serialno_setup);
+
+
+#endif /* CONFIG_USB_G_ANDROID */
 
 static struct platform_device *devices[] __initdata = {
 	&msm_device_smd,
