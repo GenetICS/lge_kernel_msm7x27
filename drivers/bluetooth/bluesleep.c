@@ -94,9 +94,6 @@ DECLARE_DELAYED_WORK(sleep_workqueue, bluesleep_sleep_work);
 #define BT_PROTO	0x01
 #define BT_TXDATA	0x02
 #define BT_ASLEEP	0x04
-#ifndef CONFIG_LGE_BRCM_H4_LPM_SUPPORT_PATCH
-//#define CONFIG_LGE_BRCM_H4_LPM_SUPPORT_PATCH
-#endif
 
 //Un-comment for root permission
 //#define BTLA_ROOT_PERMISSION
@@ -179,10 +176,17 @@ void bluesleep_sleep_wakeup(void)
 		/*Activating UART */
 		hsuart_power(1);
 	}
+#if defined(CONFIG_LGE_BRCM_H4_LPM_SUPPORT_PATCH)
 	else {
 		/* Just start the timer if not asleep */
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 	}
+#else
+	else if(gpio_get_value(bsi->ext_wake)) {
+		gpio_set_value(bsi->ext_wake, 0);
+		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
+	}
+#endif
 }
 
 /**
@@ -321,9 +325,9 @@ static void bluesleep_tx_timer_expire(unsigned long data)
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL*HZ));
 #if defined(CONFIG_LGE_BRCM_H4_LPM_SUPPORT_PATCH)
 		/* clear the incoming data flag only when there is no enqueued data on transport and can be asleep */
-		if(msm_hs_tx_empty(bsi->uport)){
+		//if(msm_hs_tx_empty(bsi->uport)){
 			clear_bit(BT_TXDATA, &flags);
-		}
+	//	}
 #endif
 	}
 
