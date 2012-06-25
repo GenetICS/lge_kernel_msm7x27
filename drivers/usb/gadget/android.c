@@ -650,8 +650,8 @@ static struct android_usb_function accessory_function = {
 static struct android_usb_function *supported_functions[] = {
 	&adb_function,
 	&acm_function,
-	&mtp_function,
-	&ptp_function,
+//	&mtp_function,
+//	&ptp_function,
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
