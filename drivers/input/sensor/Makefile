@@ -4,11 +4,16 @@
 
 # Each configuration option enables a list of files.
 
-ifeq ($(CONFIG_MACH_MSM7X27_PECAN), y)
-obj-$(CONFIG_SENSOR_GP2AP)	+= gp2ap002_pecan.o
+ifeq ($(CONFIG_MACH_MSM7X27_PECAN),y)
+ obj-$(CONFIG_SENSOR_GP2AP)	+= gp2ap002_pecan.o
 else
-obj-$(CONFIG_SENSOR_GP2AP)	+= gp2ap002.o
+ ifeq ($(CONFIG_MACH_MSM7X27_THUNDERG),y)
+  obj-$(CONFIG_SENSOR_GP2AP)	+= gp2ap002_thunderg.o
+ else
+  obj-$(CONFIG_SENSOR_GP2AP)	+= gp2ap002.o
+ endif
 endif
+
 obj-$(CONFIG_SENSOR_BMA150)	+= bma150.o
 obj-$(CONFIG_SENSOR_BMA250) += bma250_driver.o
 obj-$(CONFIG_SENSOR_K3DH)	+= k3dh.o
