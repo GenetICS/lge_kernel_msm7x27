@@ -1557,7 +1557,7 @@ static struct vm_operations_struct vm_ops = {
 static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct pmem_data *data = file->private_data;
-	int index;
+	int index = -1;
 	unsigned long vma_size =  vma->vm_end - vma->vm_start;
 	int ret = 0, id = get_id(file);
 
@@ -1582,6 +1582,18 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 	down_write(&data->sem);
 	/* check this file isn't already mmaped, for submaps check this file
 	 * has never been mmaped */
+	if (data->flags & PMEM_FLAGS_MASTERMAP)
+	{
+	    if ((data->flags == PMEM_FLAGS_UNSUBMAP) || (data->flags == PMEM_FLAGS_SUBMAP)) {
+#if PMEM_DEBUG
+	    pr_err("pmem: you can only mmap a pmem file once, "
+	    "this file is already mmaped. %x\n", data->flags);
+#endif
+	    ret = -EINVAL;
+	    goto error;
+	    }
+	}
+#if 0
 	if ((data->flags & PMEM_FLAGS_SUBMAP) ||
 	    (data->flags & PMEM_FLAGS_UNSUBMAP)) {
 #if PMEM_DEBUG
@@ -1591,6 +1603,8 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 		ret = -EINVAL;
 		goto error;
 	}
+#endif
+
 	/* if file->private_data == unalloced, alloc*/
 	if (data->index == -1) {
 		mutex_lock(&pmem[id].arena_mutex);
