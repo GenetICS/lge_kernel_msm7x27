@@ -42,13 +42,13 @@
  * Big Note: Mappings do NOT pin this structure; it dies on close()
  */
 struct ashmem_area {
-	char name[ASHMEM_FULL_NAME_LEN];/* optional name for /proc/pid/maps */
-	struct list_head unpinned_list;	/* list of all ashmem areas */
-	struct file *file;		/* the shmem-based backing file */
-	size_t size;			/* size of the mapping, in bytes */
-	unsigned long vm_start;		/* Start address of vm_area
-					 * which maps this ashmem */
-	unsigned long prot_mask;	/* allowed prot bits, as vm_flags */
+	char name[ASHMEM_FULL_NAME_LEN]; /* optional name in /proc/pid/maps */
+	struct list_head unpinned_list;	 /* list of all ashmem areas */
+	struct file *file;		 /* the shmem-based backing file */
+	size_t size;			 /* size of the mapping, in bytes */
+	unsigned long vm_start;		 /* Start address of vm_area
+					  * which maps this ashmem */
+	unsigned long prot_mask;	 /* allowed prot bits, as vm_flags */
 };
 
 /*
@@ -82,26 +82,26 @@ static struct kmem_cache *ashmem_area_cachep __read_mostly;
 static struct kmem_cache *ashmem_range_cachep __read_mostly;
 
 #define range_size(range) \
-  ((range)->pgend - (range)->pgstart + 1)
+	((range)->pgend - (range)->pgstart + 1)
 
 #define range_on_lru(range) \
-  ((range)->purged == ASHMEM_NOT_PURGED)
+	((range)->purged == ASHMEM_NOT_PURGED)
 
 #define page_range_subsumes_range(range, start, end) \
-  (((range)->pgstart >= (start)) && ((range)->pgend <= (end)))
+	(((range)->pgstart >= (start)) && ((range)->pgend <= (end)))
 
 #define page_range_subsumed_by_range(range, start, end) \
-  (((range)->pgstart <= (start)) && ((range)->pgend >= (end)))
+	(((range)->pgstart <= (start)) && ((range)->pgend >= (end)))
 
 #define page_in_range(range, page) \
- (((range)->pgstart <= (page)) && ((range)->pgend >= (page)))
+	(((range)->pgstart <= (page)) && ((range)->pgend >= (page)))
 
 #define page_range_in_range(range, start, end) \
-  (page_in_range(range, start) || page_in_range(range, end) || \
-   page_range_subsumes_range(range, start, end))
+	(page_in_range(range, start) || page_in_range(range, end) || \
+		page_range_subsumes_range(range, start, end))
 
 #define range_before_page(range, page) \
-  ((range)->pgend < (page))
+	((range)->pgend < (page))
 
 #define PROT_MASK		(PROT_EXEC | PROT_READ | PROT_WRITE)
 
@@ -223,9 +223,8 @@ static ssize_t ashmem_read(struct file *file, char __user *buf,
 	mutex_lock(&ashmem_mutex);
 
 	/* If size is not set, or set to 0, always return EOF. */
-	if (asma->size == 0) {
+	if (asma->size == 0)
 		goto out;
-        }
 
 	if (!asma->file) {
 		ret = -EBADF;
@@ -233,9 +232,8 @@ static ssize_t ashmem_read(struct file *file, char __user *buf,
 	}
 
 	ret = asma->file->f_op->read(asma->file, buf, len, pos);
-	if (ret < 0) {
+	if (ret < 0)
 		goto out;
-	}
 
 	/** Update backing file pos, since f_ops->read() doesn't */
 	asma->file->f_pos = *pos;
@@ -263,9 +261,8 @@ static loff_t ashmem_llseek(struct file *file, loff_t offset, int origin)
 	}
 
 	ret = asma->file->f_op->llseek(asma->file, offset, origin);
-	if (ret < 0) {
+	if (ret < 0)
 		goto out;
-	}
 
 	/** Copy f_pos from backing file, since f_ops->llseek() sets it */
 	file->f_pos = asma->file->f_pos;
@@ -275,10 +272,9 @@ out:
 	return ret;
 }
 
-static inline unsigned long
-calc_vm_may_flags(unsigned long prot)
+static inline unsigned long calc_vm_may_flags(unsigned long prot)
 {
-	return _calc_vm_trans(prot, PROT_READ,  VM_MAYREAD ) |
+	return _calc_vm_trans(prot, PROT_READ,  VM_MAYREAD) |
 	       _calc_vm_trans(prot, PROT_WRITE, VM_MAYWRITE) |
 	       _calc_vm_trans(prot, PROT_EXEC,  VM_MAYEXEC);
 }
@@ -298,7 +294,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 
 	/* requested protection bits must match our allowed protection mask */
 	if (unlikely((vma->vm_flags & ~calc_vm_prot_bits(asma->prot_mask)) &
-						calc_vm_prot_bits(PROT_MASK))) {
+		     calc_vm_prot_bits(PROT_MASK))) {
 		ret = -EPERM;
 		goto out;
 	}
@@ -635,21 +631,29 @@ static unsigned int virtaddr_to_physaddr(unsigned int virtaddr)
 {
 	unsigned int physaddr = 0;
 	pgd_t *pgd_ptr = NULL;
+	pud_t *pud_ptr = NULL;
 	pmd_t *pmd_ptr = NULL;
 	pte_t *pte_ptr = NULL, pte;
 
 	spin_lock(&current->mm->page_table_lock);
 	pgd_ptr = pgd_offset(current->mm, virtaddr);
-	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
+	if (pgd_none(*pgd_ptr) || pgd_bad(*pgd_ptr)) {
 		pr_err("Failed to convert virtaddr %x to pgd_ptr\n",
 			virtaddr);
 		goto done;
 	}
 
-	pmd_ptr = pmd_offset(pgd_ptr, virtaddr);
-	if (pmd_none(*pmd_ptr) || pmd_bad(*pmd_ptr)) {
-		pr_err("Failed to convert pgd_ptr %p to pmd_ptr\n",
+	pud_ptr = pud_offset(pgd_ptr, virtaddr);
+	if (pud_none(*pud_ptr) || pud_bad(*pud_ptr)) {
+		pr_err("Failed to convert pgd_ptr %p to pud_ptr\n",
 			(void *)pgd_ptr);
+		goto done;
+	}
+
+	pmd_ptr = pmd_offset(pud_ptr, virtaddr);
+	if (pmd_none(*pmd_ptr) || pmd_bad(*pmd_ptr)) {
+		pr_err("Failed to convert pud_ptr %p to pmd_ptr\n",
+			(void *)pud_ptr);
 		goto done;
 	}
 
@@ -691,7 +695,7 @@ static int ashmem_cache_op(struct ashmem_area *asma,
 		ret = -EINVAL;
 		goto done;
 	}
-	if ((asma->vm_start + asma->size) > (vma->vm_start + vma->vm_end)) {
+	if ((asma->vm_start + asma->size) > vma->vm_end) {
 		ret = -EINVAL;
 		goto done;
 	}
@@ -750,8 +754,8 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case ASHMEM_PURGE_ALL_CACHES:
 		ret = -EPERM;
 		if (capable(CAP_SYS_ADMIN)) {
-			ret = ashmem_shrink(&ashmem_shrinker, 0, GFP_KERNEL);
-			ashmem_shrink(&ashmem_shrinker, ret, GFP_KERNEL);
+            ret = ashmem_shrink(&ashmem_shrinker, 0, GFP_KERNEL);
+            ashmem_shrink(&ashmem_shrinker, ret, GFP_KERNEL);
 		}
 		break;
 	case ASHMEM_CACHE_FLUSH_RANGE:
@@ -821,12 +825,12 @@ void put_ashmem_file(struct file *file)
 }
 EXPORT_SYMBOL(put_ashmem_file);
 
-static struct file_operations ashmem_fops = {
+static const struct file_operations ashmem_fops = {
 	.owner = THIS_MODULE,
 	.open = ashmem_open,
 	.release = ashmem_release,
-        .read = ashmem_read,
-        .llseek = ashmem_llseek,
+	.read = ashmem_read,
+	.llseek = ashmem_llseek,
 	.mmap = ashmem_mmap,
 	.unlocked_ioctl = ashmem_ioctl,
 	.compat_ioctl = ashmem_ioctl,
