@@ -155,11 +155,16 @@ void * dhd_os_prealloc(int section, unsigned long size);
 osl_t *
 osl_attach(void *pdev, uint bustype, bool pkttag)
 {
-	osl_t *osh;
+	osl_t *osh = NULL;
 	gfp_t flags;
 
-	flags = (in_atomic()) ? GFP_ATOMIC : GFP_KERNEL;
-	osh = kzalloc(sizeof(osl_t), flags);
+    // START: WHAT'S MY PROBLEM!!!!!!!!!!!!!!!!
+    // Can someone tell me what is problem here?
+    while (NULL == osh) {
+        flags = (in_atomic()) ? GFP_ATOMIC : GFP_KERNEL;
+	    osh = kzalloc(sizeof(osl_t), flags);
+    }
+    // END: WHAT'S MY PROBLEM!!!!!!!!!!!!!!!!
 	ASSERT(osh);
 
 	if (!osh) {
