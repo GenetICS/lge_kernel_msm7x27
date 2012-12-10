@@ -69,35 +69,49 @@ static int dhd_oob_gpio_num = -1; /* GG 19 */
 module_param(dhd_oob_gpio_num, int, 0644);
 MODULE_PARM_DESC(dhd_oob_gpio_num, "DHD oob gpio number");
 
-int dhd_customer_oob_irq_map(void)
+int dhd_customer_oob_irq_map(unsigned long *irq_flags_ptr)
 {
-int  host_oob_irq = 0;
+       int  host_oob_irq = 0;
+
+#ifdef CUSTOMER_HW2
+       host_oob_irq = wifi_get_irq_number(irq_flags_ptr);
+
+#else /* for NOT  CUSTOMER_HW2 */
 #if defined(CUSTOM_OOB_GPIO_NUM)
-	if (dhd_oob_gpio_num < 0) {
-		dhd_oob_gpio_num = CUSTOM_OOB_GPIO_NUM;
-	}
+       if (dhd_oob_gpio_num < 0) {
+               dhd_oob_gpio_num = CUSTOM_OOB_GPIO_NUM;
+       }
 #endif
 
-	if (dhd_oob_gpio_num < 0) {
-		WL_ERROR(("%s: ERROR customer specific Host GPIO is NOT defined \n",
-		__FUNCTION__));
-		return (dhd_oob_gpio_num);
-	}
+       if (dhd_oob_gpio_num < 0) {
+               WL_ERROR(("%s: ERROR customer specific Host GPIO is NOT defined \n",
+                       __FUNCTION__));
+               return (dhd_oob_gpio_num);
+       }
 
-	WL_ERROR(("%s: customer specific Host GPIO number is (%d)\n",
-	         __FUNCTION__, dhd_oob_gpio_num));
+       WL_ERROR(("%s: customer specific Host GPIO number is (%d)\n",
+                __FUNCTION__, dhd_oob_gpio_num));
 
 #if defined CUSTOMER_HW
-	host_oob_irq = MSM_GPIO_TO_INT(dhd_oob_gpio_num);
+       host_oob_irq = MSM_GPIO_TO_INT(dhd_oob_gpio_num);
 #elif defined CUSTOMER_HW3
-	gpio_request(dhd_oob_gpio_num, "oob irq");
-	host_oob_irq = gpio_to_irq(dhd_oob_gpio_num);
-	gpio_direction_input(dhd_oob_gpio_num);
-#endif
+       gpio_request(dhd_oob_gpio_num, "oob irq");
+       host_oob_irq = gpio_to_irq(dhd_oob_gpio_num);
+       gpio_direction_input(dhd_oob_gpio_num);
+#endif /* CUSTOMER_HW */
+#endif /* CUSTOMER_HW2 */
 
-	return (host_oob_irq);
+       return (host_oob_irq);
 }
 #endif /* defined(OOB_INTR_ONLY) */
+
+
+
+
+
+
+
+
 
 /* LGE_CHANGE_S [yoohoo@lge.com] 2009-12-08, support start/stop */
 #if defined(CONFIG_LGE_BCM432X_PATCH)

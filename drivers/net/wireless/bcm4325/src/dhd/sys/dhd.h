@@ -304,7 +304,7 @@ extern void dhd_customer_gpio_wlan_ctrl(int onoff);
 /* LGE_CHANGE_E [yoohoo@lge.com] 2009-12-08, support start/stop */
 extern void dhd_os_sdunlock_sndup_rxq(dhd_pub_t * pub);
 #if defined(OOB_INTR_ONLY)
-extern int dhd_customer_oob_irq_map(void);
+extern int dhd_customer_oob_irq_map(unsigned long *irq_flags_ptr);
 #endif /* defined(OOB_INTR_ONLY) */
 
 int setScheduler(struct task_struct *p, int policy, struct sched_param *param);
