@@ -1,3 +1,4 @@
+
 /* arch/arm/mach-msm/acpuclock.c
  *
  * MSM architecture clock driver
@@ -16,7 +17,7 @@
  * GNU General Public License for more details.
  *
  */
-
+ 
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -203,27 +204,55 @@ static struct clkctl_acpu_speed pll0_196_pll1_960_pll2_1200[] = {
 static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200[] = {
 	{ 0, 19200, ACPU_PLL_TCXO, 0, 0, 19200, 0, 0, 30720 },
 	{ 0, 120000, ACPU_PLL_0, 4, 7,  60000, 1, 3,  61440 },
-	{ 1, 122880, ACPU_PLL_1, 1, 1,  61440, 1, 3,  61440 },
+	{ 1, 122880, ACPU_PLL_1, 1, 1,  61440, 1, 0,  61440 }, //3
 	{ 0, 200000, ACPU_PLL_2, 2, 5,  66667, 2, 4,  61440 },
-	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 4,  61440 },
-	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 5, 122880 },
+	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 2,  61440 }, //4
+	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 3, 122880 }, //5
 	{ 0, 400000, ACPU_PLL_2, 2, 2, 133333, 2, 5, 122880 },
-	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 6, 122880 },
-	{ 1, 600000, ACPU_PLL_2, 2, 1, 200000, 2, 7, 122880 },
+	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 5, 122880 }, //6
+	{ 1, 600000, ACPU_PLL_2, 2, 1, 200000, 2, 6, 122880 }, //7
 #ifdef CONFIG_MSM7X27_OVERCLOCK
+	#ifndef CONFIG_MSM7X27_BACONMAKER
+	/* Conservative overclocking */
+	{ 1, 652800, ACPU_PLL_0, 4, 0, 217600, 2, 7, 200000 },
+	{ 1, 672000, ACPU_PLL_0, 4, 0, 224000, 2, 7, 200000 },
+	{ 1, 691200, ACPU_PLL_0, 4, 0, 230400, 2, 7, 200000 },
+	{ 1, 710400, ACPU_PLL_0, 4, 0, 236800, 2, 7, 200000 },
+	{ 1, 729600, ACPU_PLL_0, 4, 0, 243200, 2, 7, 200000 },
+	{ 1, 748800, ACPU_PLL_0, 4, 0, 249600, 2, 7, 200000 },
+	{ 1, 768000, ACPU_PLL_0, 4, 0, 256000, 2, 7, 200000 },
+	{ 1, 787200, ACPU_PLL_0, 4, 0, 262400, 2, 7, 200000 },
+	{ 1, 806400, ACPU_PLL_0, 4, 0, 268800, 2, 7, 200000 },
+	{ 1, 825600, ACPU_PLL_0, 4, 0, 275200, 2, 7, 200000 },
+	{ 1, 844800, ACPU_PLL_0, 4, 0, 281600, 2, 7, 200000 },
+	{ 1, 864000, ACPU_PLL_0, 4, 1, 216000, 3, 7, 216000 },
+	#else
+	/* Agressive overclocking */
+	{ 1, 652800, ACPU_PLL_0, 4, 0, 326400, 1, 7, 200000 },
+	{ 1, 672000, ACPU_PLL_0, 4, 0, 336000, 1, 7, 200000 },
+	{ 1, 691200, ACPU_PLL_0, 4, 0, 345600, 1, 7, 200000 },
+	{ 1, 710400, ACPU_PLL_0, 4, 0, 355200, 1, 7, 200000 },
+	{ 1, 729600, ACPU_PLL_0, 4, 0, 364800, 1, 7, 200000 },
+	{ 1, 748800, ACPU_PLL_0, 4, 0, 374400, 1, 7, 200000 },
+	{ 1, 768000, ACPU_PLL_0, 4, 0, 384000, 1, 7, 200000 },
+	{ 1, 787200, ACPU_PLL_0, 4, 0, 393600, 1, 7, 200000 },
+	{ 1, 806400, ACPU_PLL_0, 4, 0, 403200, 1, 7, 200000 },
+	{ 1, 825600, ACPU_PLL_0, 4, 0, 412800, 1, 7, 200000 },
+	{ 1, 844800, ACPU_PLL_0, 4, 0, 422400, 1, 7, 200000 },
+	{ 1, 864000, ACPU_PLL_0, 4, 1, 216000, 3, 7, 216000 },
+	#endif
+#endif
+/* original OC values
 	{ 1, 652800, ACPU_PLL_0, 4, 1, 163200, 3, 7, 192000 },
 	{ 1, 691200, ACPU_PLL_0, 4, 1, 172800, 3, 7, 192000 },
 	{ 1, 729600, ACPU_PLL_0, 4, 1, 182400, 3, 7, 192000 },
 	{ 1, 748800, ACPU_PLL_0, 4, 1, 187200, 3, 7, 192000 },
 	{ 1, 768000, ACPU_PLL_0, 4, 1, 192000, 3, 7, 192000 },
 	{ 1, 787200, ACPU_PLL_0, 4, 1, 196800, 3, 7, 196800 },
-#ifdef CONFIG_MSM7X27_BACONMAKER
 	{ 1, 806400, ACPU_PLL_0, 4, 1, 201600, 3, 7, 201600 },
 	{ 1, 825600, ACPU_PLL_0, 4, 1, 206400, 3, 7, 206400 },
 	{ 1, 844800, ACPU_PLL_0, 4, 1, 211200, 3, 7, 211200 },
-	{ 1, 864000, ACPU_PLL_0, 4, 1, 216000, 3, 7, 216000 },
-#endif
-#endif
+*/
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0} }
 };
 
@@ -361,7 +390,7 @@ static int pc_pll_request(unsigned id, unsigned on)
 			pll_control->pll[PLL_BASE + id].votes |= 2;
 			if (!pll_control->pll[PLL_BASE + id].on) {
 				writel(6, PLLn_MODE(id));
-				dsb();
+				//dsb();
 				udelay(50);
 				writel(7, PLLn_MODE(id));
 				pll_control->pll[PLL_BASE + id].on = 1;
@@ -422,7 +451,7 @@ static int acpuclk_set_vdd_level(int vdd)
 	       current_vdd, vdd);
 
 	writel((1 << 7) | (vdd << 3), A11S_VDD_SVS_PLEVEL_ADDR);
-	dsb();
+	//dsb();
 	udelay(drv_state.vdd_switch_time_us);
 	if ((readl(A11S_VDD_SVS_PLEVEL_ADDR) & 0x7) != vdd) {
 		pr_err("VDD set failed\n");
@@ -438,26 +467,30 @@ static int acpuclk_set_vdd_level(int vdd)
 static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 {
 	uint32_t reg_clkctl, reg_clksel, clk_div, src_sel;
-#ifdef CONFIG_MSM7X27_OVERCLOCK
-	uint32_t a11_div;
-#endif
 
 	reg_clksel = readl(A11S_CLK_SEL_ADDR);
 
 	/* AHB_CLK_DIV */
 	clk_div = (reg_clksel >> 1) & 0x03;
-#ifdef CONFIG_MSM7X27_OVERCLOCK
-	a11_div = hunt_s->a11clk_src_div;
 
-	if (hunt_s->a11clk_khz > 600000) {
-		a11_div=0;
+	/* CLK_SEL_SRC1NO */
+	src_sel = reg_clksel & 1;
+
+	// Perform overclocking if requested
+	if(hunt_s->pll==0 && hunt_s->a11clk_khz>600000) {
+		// Change the speed of PLL0
 		writel(hunt_s->a11clk_khz/19200, PLLn_L_VAL(0));
-		cpu_relax();
+		//cpu_relax();
+		udelay(50);
+	}
+	
+#ifdef CONFIG_MSM7X27_OVERCLOCK
+	// Pump the PLL2 up another 19200kHz (overclock stock 600MHz from 595.2MHz to 604.8MHz)
+	if(hunt_s->pll==2 && hunt_s->a11clk_khz==600000) {
+		writel(63, PLLn_L_VAL(2));
 		udelay(50);
 	}
 #endif
-	/* CLK_SEL_SRC1NO */
-	src_sel = reg_clksel & 1;
 
 	/*
 	 * If the new clock divider is higher than the previous, then
@@ -473,27 +506,13 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	reg_clkctl = readl(A11S_CLK_CNTL_ADDR);
 	reg_clkctl &= ~(0xFF << (8 * src_sel));
 	reg_clkctl |= hunt_s->a11clk_src_sel << (4 + 8 * src_sel);
-#ifdef CONFIG_MSM7X27_OVERCLOCK
-	reg_clkctl |= a11_div << (0 + 8 * src_sel);
-#else
 	reg_clkctl |= hunt_s->a11clk_src_div << (0 + 8 * src_sel);
-#endif
 	writel(reg_clkctl, A11S_CLK_CNTL_ADDR);
 
 	/* Program clock source selection */
 	reg_clksel ^= 1;
 	writel(reg_clksel, A11S_CLK_SEL_ADDR);
 
-#ifdef CONFIG_MSM7X27_OVERCLOCK
-        if (hunt_s->pll == ACPU_PLL_0 && hunt_s->a11clk_khz <= 600000) {
-		if ((readl(PLLn_L_VAL(0)) & 0x3f) != PLL_960_MHZ) {
-			/* Restore PLL0 to standard config */
-			writel(PLL_960_MHZ, PLLn_L_VAL(0));
-		}
-		cpu_relax();
-		udelay(50);
-        }
-#endif
 	/*
 	 * If the new clock divider is lower than the previous, then
 	 * program the divider after switching the clock
@@ -636,7 +655,7 @@ int acpuclk_set_rate(int cpu, unsigned long rate, enum setrate_reason reason)
 		drv_state.current_speed = cur_s;
 		/* Re-adjust lpj for the new clock speed. */
 		loops_per_jiffy = cur_s->lpj;
-		dsb();
+		//dsb();
 		udelay(drv_state.acpu_switch_time_us);
 	}
 
