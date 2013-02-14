@@ -232,6 +232,7 @@ static struct clk_lookup msm_clocks_7x27[] = {
 	CLK_LOOKUP("iface_clk",		tsif_p_clk.c,	"msm_tsif.0"),
 	CLK_LOOKUP("core_clk",		uart1_clk.c,	"msm_serial.0"),
 	CLK_LOOKUP("core_clk",		uart2_clk.c,	"msm_serial.1"),
+	CLK_LOOKUP("core_clk",		uart3_clk.c,	"msm_serial.2"),
 	CLK_LOOKUP("core_clk",		uart1dm_clk.c,	"msm_serial_hs.0"),
 	CLK_LOOKUP("core_clk",		uart2dm_clk.c,	"msm_serial_hs.1"),
 	CLK_LOOKUP("alt_core_clk",	usb_hs_clk.c,	"msm_otg"),

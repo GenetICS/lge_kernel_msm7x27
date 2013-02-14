@@ -534,11 +534,33 @@ config FB_MSM_EBI2_TMD_QVGA_EPSON_QCIF
 	---help---
 	  Support for EBI2 TMD QVGA (240x320) and Epson QCIF (176x220) panel
 
+config FB_MSM_EBI2_TOVIS_QVGA
+        bool "EBI2 Tovis QVGA Panel"
+        select FB_MSM_EBI2
+        ---help---
+          Support for EBI2 TOVIS QVGA (240x320) panel
+
 config FB_MSM_HDMI_AS_PRIMARY
 	depends on FB_MSM_HDMI_COMMON
 	bool "Use HDMI as primary panel"
 	---help---
 	Support for using HDMI as primary
+
+# LGE_CHANGE_S [minjong.gong] 2010-03-24, Google Mass CDMA Hitachi MDDI I/F LCD
+config FB_MSM_MDDI_HITACHI_HVGA
+        bool "MDDI HITACHI HVGA Panel"
+        select FB_MSM_MDDI
+        ---help---
+          Support for MDDI HITACHI HVGA(320x480) Panel.
+# LGE_CHANGE_E [minjong.gong] 2010-03-24, Google Mass CDMA Hitachi MDDI I/F LCD
+
+# LGE_CHANGE_S [dojip.kim@lge.com] 2010-04-23, Thunder Sprint Sharp(NOVATEK) MDDI I/F LCD
+config FB_MSM_MDDI_NOVATEK_HVGA
+        bool "MDDI Sharp(NOVATEK) HVGA Panel"
+        select FB_MSM_MDDI
+        ---help---
+          Support for MDDI NOVATEK HVGA(320x480) Panel.
+# LGE_CHANGE_E [dojip.kim@lge.com] 2010-04-23, Thunder Sprint Sharp(NOVATEK) MDDI I/F LCD
 
 config FB_MSM_PANEL_NONE
 	bool "NONE"

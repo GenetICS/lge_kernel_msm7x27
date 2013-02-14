@@ -58,6 +58,28 @@
 #include "msm_sdcc.h"
 #include "msm_sdcc_dml.h"
 
+
+#ifdef CONFIG_BCM4325_GPIO_WL_RESET
+#define WLAN_RESET_GPIO CONFIG_BCM4325_GPIO_WL_RESET
+#endif
+
+#ifdef CONFIG_BCM4329_GPIO_WL_RESET
+#define WLAN_RESET_GPIO CONFIG_BCM4329_GPIO_WL_RESET
+#endif
+
+#ifdef CONFIG_BCM4330_GPIO_WL_RESET
+#define WLAN_RESET_GPIO CONFIG_BCM4330_GPIO_WL_RESET
+#endif
+
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, for gpio_to_irq */
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+#include <asm/gpio.h>
+/*LGE_CHANGE_S, [dongp.kim@lge.com], 2010-03-17, mmc_fmax is 24576000Hz for Wi-Fi */ 
+#define BRCM_WLAN_SLOT 2
+/*LGE_CHANGE_E, [dongp.kim@lge.com], 2010-03-17, mmc_fmax is 24576000Hz for Wi-Fi */ 
+#endif
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, for gpio_to_irq */
+
 #define DRIVER_NAME "msm-sdcc"
 
 #define DBG(host, fmt, args...)	\
@@ -127,6 +149,35 @@ msmsdcc_print_status(struct msmsdcc_host *host, char *hdr, uint32_t status)
 	pr_debug("\n");
 }
 #endif
+
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, Support Host Wakeup */
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+struct early_suspend dhdpm;
+EXPORT_SYMBOL(dhdpm);
+
+void register_mmc_card_pm(struct early_suspend *cardpm)
+{
+	if((cardpm != NULL) && (cardpm->suspend !=NULL) && (cardpm->resume != NULL))
+	{
+		dhdpm.suspend = cardpm->suspend;
+		dhdpm.resume = cardpm->resume;
+		printk("%s: [WiFi] Callbacks registered successfully. \n",__FUNCTION__);
+	}
+	else
+		printk("%s: Error: Null pointer!! \n", __FUNCTION__);
+}
+
+EXPORT_SYMBOL(register_mmc_card_pm);
+
+void unregister_mmc_card_pm(void)
+{
+	printk("%s: [WIFI] Unregistering suspend/resume callbacks.  \n", __FUNCTION__);
+	dhdpm.suspend = NULL;
+	dhdpm.resume  = NULL;
+}
+EXPORT_SYMBOL(unregister_mmc_card_pm);
+#endif
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, Support Host Wakeup */
 
 static void
 msmsdcc_start_command(struct msmsdcc_host *host, struct mmc_command *cmd,
@@ -1438,6 +1489,14 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 			len = msmsdcc_pio_read(host, buffer, remain);
 		if (status & MCI_TXACTIVE)
 			len = msmsdcc_pio_write(host, buffer, remain);
+			
+/*LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24, when PIO_irq, delay is given */ 
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+		if (host->mmc->card != NULL && host->mmc->card->type == MMC_TYPE_SDIO){ 
+			msmsdcc_delay(host);
+		}
+#endif	
+/*LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24, when PIO_irq, delay is given */ 
 
 		/* len might have aligned to 32bits above */
 		if (len > remain)
@@ -3421,13 +3480,33 @@ msmsdcc_check_status(unsigned long data)
 					" is ACTIVE_LOW\n",
 					mmc_hostname(host->mmc),
 					host->oldstat, status);
+#ifdef CONFIG_LGE_BCM432X_PATCH
+#ifdef CONFIG_BCM4325_GPIO_WL_RESET
+			else if (host->plat->status_irq == MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET)) {
+#elif defined CONFIG_BCM4329_GPIO_WL_RESET
+			else if (host->plat->status_irq == MSM_GPIO_TO_INT(CONFIG_BCM4329_GPIO_WL_RESET)) {
+#endif
+				printk(KERN_ERR "[host->plat->status_irq:%d:MSM_GPIO_TO_INIT:%d:status:%d:%s:%d]\n",
+					host->plat->status_irq,
+#ifdef CONFIG_BCM4325_GPIO_WL_RESET
+					MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET),
+#elif defined CONFIG_BCM4329_GPIO_WL_RESET
+					MSM_GPIO_TO_INT(CONFIG_BCM4329_GPIO_WL_RESET),
+#endif
+					status, __func__, __LINE__);
+				mmc_detect_change(host->mmc, 0);
+			}
+#endif
 			else
 				pr_info("%s: Slot status change detected "
 					"(%d -> %d) and the card detect GPIO"
 					" is ACTIVE_HIGH\n",
 					mmc_hostname(host->mmc),
 					host->oldstat, status);
-			mmc_detect_change(host->mmc, 0);
+				if (host->eject)
+					mmc_detect_change(host->mmc, 0);
+				else
+					mmc_detect_change(host->mmc, (3 * HZ) / 2);
 		}
 		host->oldstat = status;
 	} else {
@@ -3954,23 +4033,44 @@ static void msmsdcc_early_suspend(struct early_suspend *h)
 		container_of(h, struct msmsdcc_host, early_suspend);
 	unsigned long flags;
 
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
+	printk(KERN_ERR "msmsdcc_early_suspend : start \n");
+#ifdef  CONFIG_BCM4325_GPIO_WL_RESET
+	if ( host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET) )
+#endif
+	{
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
 	spin_lock_irqsave(&host->lock, flags);
 	host->polling_enabled = host->mmc->caps & MMC_CAP_NEEDS_POLL;
 	host->mmc->caps &= ~MMC_CAP_NEEDS_POLL;
 	spin_unlock_irqrestore(&host->lock, flags);
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
+	}
+	printk(KERN_ERR "msmsdcc_early_suspend : end \n");
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
 };
 static void msmsdcc_late_resume(struct early_suspend *h)
 {
 	struct msmsdcc_host *host =
 		container_of(h, struct msmsdcc_host, early_suspend);
 	unsigned long flags;
-
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
+	printk(KERN_ERR "msmsdcc_late_resume : start \n");
+#ifdef  CONFIG_BCM4325_GPIO_WL_RESET
+	if ( host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET) )
+#endif
+	{
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
 	if (host->polling_enabled) {
 		spin_lock_irqsave(&host->lock, flags);
 		host->mmc->caps |= MMC_CAP_NEEDS_POLL;
 		mmc_detect_change(host->mmc, 0);
 		spin_unlock_irqrestore(&host->lock, flags);
 	}
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
+	}
+	printk(KERN_ERR "msmsdcc_late_resume : END \n");
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
 };
 #endif
 
@@ -4458,13 +4558,34 @@ msmsdcc_probe(struct platform_device *pdev)
 	 */
 	mmc->ops = &msmsdcc_ops;
 	mmc->f_min = msmsdcc_get_min_sup_clk_rate(host);
+/*LGE_CHANGE_S, [dongp.kim@lge.com], 2010-03-17, mmc_fmax is 24576000Hz for Wi-Fi */
+#if !defined(CONFIG_LGE_BCM432X_PATCH)
 	mmc->f_max = msmsdcc_get_max_sup_clk_rate(host);
+#else
+	if (host->pdev_id == BRCM_WLAN_SLOT){ 
+		mmc->f_max = 24576000;
+		//printk("%s : slot set f_max [%ld]\n",mmc_hostname(host->mmc),mmc->f_max);
+	} else {
+		mmc->f_max = msmsdcc_get_max_sup_clk_rate(host);
+	}
+#endif  /* CONFIG_LGE_BCM432X_PATCH */
 	mmc->ocr_avail = plat->ocr_mask;
 	mmc->pm_caps |= MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
 	mmc->caps |= plat->mmc_bus_width;
 
+#if !defined(CONFIG_LGE_BCM432X_PATCH)
 	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED;
 	mmc->caps |= MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
+#else
+	if (host->pdev_id == BRCM_WLAN_SLOT){ 
+		mmc->caps |= MMC_CAP_SD_HIGHSPEED;
+		pr_info("%s : slot set MMC_CAP_SD_HIGHSPEED\n",mmc_hostname(host->mmc));
+	} else {
+		mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED;
+		mmc->caps |= MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
+	}
+#endif  /* CONFIG_LGE_BCM432X_PATCH */
+/*LGE_CHANGE_E, [dongp.kim@lge.com], 2010-03-17, mmc_fmax is 24576000Hz for Wi-Fi */ 
 
 	/*
 	 * If we send the CMD23 before multi block write/read command
@@ -4920,6 +5041,8 @@ msmsdcc_runtime_suspend(struct device *dev)
 		 * the host so that any resume requests after this will
 		 * simple become pm usage counter increment operations.
 		 */
+// LGE_DEV_PORTING, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
+#if !defined(CONFIG_LGE_BCM432X_PATCH)
 		pm_runtime_get_noresume(dev);
 		/* If there is pending detect work abort runtime suspend */
 		if (unlikely(work_busy(&mmc->detect.work)))
@@ -4927,7 +5050,35 @@ msmsdcc_runtime_suspend(struct device *dev)
 		else
 			rc = mmc_suspend_host(mmc);
 		pm_runtime_put_noidle(dev);
+#else
+		if (host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO)) {
+	                pm_runtime_get_noresume(dev);
+        	        /* If there is pending detect work abort runtime suspend */
+                	if (unlikely(work_busy(&mmc->detect.work)))
+                        	rc = -EAGAIN;
+	                else
+        	                rc = mmc_suspend_host(mmc);
+                	pm_runtime_put_noidle(dev);
+		}
 
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+		//else if (mmc->card && mmc->card->type == MMC_TYPE_SDIO) {
+#if defined(CONFIG_BCM4325_GPIO_WL_RESET)
+		if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
+#elif defined(CONFIG_BCM4329_GPIO_WL_RESET)
+		if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4329_GPIO_WL_RESET)) {
+#endif
+			if(dhdpm.suspend != NULL) {
+				//rc = dhdpm.suspend(NULL);
+				dhdpm.suspend(NULL);
+			}
+			else
+				printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
+		}
+#endif /* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
+#endif /* !defined(CONFIG_LGE_BCM432X_PATCH) */
+// LGE_DEV_END, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
 		if (!rc) {
 			spin_lock_irqsave(&host->lock, flags);
 			host->sdcc_suspended = true;
@@ -4969,6 +5120,9 @@ msmsdcc_runtime_resume(struct device *dev)
 		return 0;
 
 	pr_debug("%s: %s: start\n", mmc_hostname(mmc), __func__);
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24 */
+	printk(KERN_ERR "msmsdcc_resume : start \n");
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24 */
 	if (mmc) {
 		if (mmc->card && mmc_card_sdio(mmc->card) &&
 				mmc_card_keep_power(mmc)) {
@@ -4979,6 +5133,26 @@ msmsdcc_runtime_resume(struct device *dev)
 		}
 
 		mmc_resume_host(mmc);
+		
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+		//if ( mmc->card && mmc->card->type == MMC_TYPE_SDIO) {
+#if defined(CONFIG_BCM4325_GPIO_WL_RESET)
+		if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
+#elif defined(CONFIG_BCM4329_GPIO_WL_RESET)
+		if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4329_GPIO_WL_RESET)) {
+#endif
+			printk("%s: Enabling SDIO Interrupt \n", __FUNCTION__);
+			//msmsdcc_enable_sdio_irq(mmc, 1); We will confirm whether this function is need ?
+
+			if(dhdpm.resume != NULL) {
+				dhdpm.resume(NULL);
+			}
+			else
+				printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
+		}
+#endif	
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
 
 		/*
 		 * FIXME: Clearing of flags must be handled in clients
@@ -5003,6 +5177,9 @@ msmsdcc_runtime_resume(struct device *dev)
 		wake_unlock(&host->sdio_suspend_wlock);
 	}
 	pr_debug("%s: %s: end\n", mmc_hostname(mmc), __func__);
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24 */
+	printk(KERN_ERR "msmsdcc_resume : end \n");
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24 */
 	return 0;
 }
 

@@ -54,7 +54,6 @@ config MTD_MSM_NAND
 	depends on MTD && ARCH_MSM
 	select CRC16
 	select BITREVERSE
-	select MTD_NAND_IDS
 	default y
 	help
 	  Support for some NAND chips connected to the MSM NAND controller.
@@ -202,7 +201,6 @@ comment "Disk-On-Chip Device Drivers"
 config MTD_DOC2000
 	tristate "M-Systems Disk-On-Chip 2000 and Millennium (DEPRECATED)"
 	select MTD_DOCPROBE
-	select MTD_NAND_IDS
 	---help---
 	  This provides an MTD device driver for the M-Systems DiskOnChip
 	  2000 and Millennium devices.  Originally designed for the DiskOnChip
@@ -224,7 +222,6 @@ config MTD_DOC2000
 config MTD_DOC2001
 	tristate "M-Systems Disk-On-Chip Millennium-only alternative driver (DEPRECATED)"
 	select MTD_DOCPROBE
-	select MTD_NAND_IDS
 	---help---
 	  This provides an alternative MTD device driver for the M-Systems
 	  DiskOnChip Millennium devices.  Use this if you have problems with
@@ -245,7 +242,6 @@ config MTD_DOC2001
 config MTD_DOC2001PLUS
 	tristate "M-Systems Disk-On-Chip Millennium Plus"
 	select MTD_DOCPROBE
-	select MTD_NAND_IDS
 	---help---
 	  This provides an MTD device driver for the M-Systems DiskOnChip
 	  Millennium Plus devices.

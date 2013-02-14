@@ -55,6 +55,20 @@ struct msm_cam_expander_info {
 	int bus_id;
 };
 
+/* LGE_CHANGES_S [junyeong.han@lge.com] 2009-09-07, unified code for 7x27  */
+/* Add power on/off function pointers to devide driver and
+ * platform data which is dependent HW
+ */
+#if defined (CONFIG_MACH_LGE)
+struct msm_camera_device_platform_data {
+  int (*camera_gpio_on) (void);
+  void (*camera_gpio_off)(void);
+  struct msm_camera_io_ext ioext;
+  struct msm_camera_io_clk ioclk;
+  int (*camera_power_on) (void);
+  int (*camera_power_off)(void);
+};
+#else  /* original */
 struct msm_camera_device_platform_data {
 	int (*camera_gpio_on) (void);
 	void (*camera_gpio_off)(void);
@@ -68,6 +82,7 @@ struct msm_camera_device_platform_data {
 	uint8_t is_vpe;
 	struct msm_bus_scale_pdata *cam_bus_scale_table;
 };
+#endif
 enum msm_camera_csi_data_format {
 	CSI_8BIT,
 	CSI_10BIT,

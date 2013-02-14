@@ -90,26 +90,12 @@ static inline int cpu_is_msm7x01(void)
 
 static inline int cpu_is_msm7x25(void)
 {
-#ifdef CONFIG_ARCH_MSM7X25
-	enum msm_cpu cpu = socinfo_get_msm_cpu();
-
-	BUG_ON(cpu == MSM_CPU_UNKNOWN);
-	return cpu == MSM_CPU_7X25;
-#else
 	return 0;
-#endif
 }
 
 static inline int cpu_is_msm7x27(void)
 {
-#ifdef CONFIG_ARCH_MSM7X27
-	enum msm_cpu cpu = socinfo_get_msm_cpu();
-
-	BUG_ON(cpu == MSM_CPU_UNKNOWN);
-	return cpu == MSM_CPU_7X27;
-#else
-	return 0;
-#endif
+	return 1;
 }
 
 static inline int cpu_is_msm7x27a(void)

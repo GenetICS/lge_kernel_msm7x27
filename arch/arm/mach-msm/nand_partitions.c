@@ -48,7 +48,19 @@ struct msm_ptbl_entry {
 	__u32 flags;
 };
 
+#ifdef CONFIG_MACH_LGE
+//[LGE_UPDATE_S] DMS_SYSTEM hyunwook.choo 2011-06-09
+/* LGE_CHANGE_S [hyunhui.park@lge.com] 2010-06-15, increase max for fota */
+#if defined(CONFIG_MACH_MSM7X27_THUNDERG)
+#define MSM_MAX_PARTITIONS 11
+#else /* original */
+#define MSM_MAX_PARTITIONS 12
+#endif
+/* LGE_CHANGE_E */
+#else /* original */
 #define MSM_MAX_PARTITIONS 18
+#endif
+//[LGE_UPDATE_E] DMS_SYSTEM hyunwook.choo
 
 static struct mtd_partition msm_nand_partitions[MSM_MAX_PARTITIONS];
 static char msm_nand_names[MSM_MAX_PARTITIONS * 16];

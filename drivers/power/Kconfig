@@ -351,5 +351,12 @@ config PM8921_BMS
 	depends on MFD_PM8921_CORE
 	help
 	  Say Y here to enable support for pm8921 chip bms subdevice
+	  
+config MAX17040_FUEL_GAUGE
+	tristate "MAX17040 fuel gauge"
+	depends on ARCH_MSM
+	default n
+	help
+	  Say Y to enable support for MAX17040 fuel gauge.
 
 endif # POWER_SUPPLY

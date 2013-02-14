@@ -769,6 +769,29 @@ struct msm_snapshot_pp_status {
 #define CFG_GET_ACTUATOR_INFO		35
 #define CFG_MAX			36
 
+/* LGE_CHANGE_S [junyeong.han@lge.com] Add CFG values for auto focus */
+/* 2010-05-02: Add auto-focus values */
+/* 2010-05-05: Add setting iso values */
+/* 2010-05-14: Add setting scene values */
+//LGE_DEV_PORTING UNIVA
+#if defined(CONFIG_ISX005) || defined(CONFIG_MT9T113) || defined(CONFIG_S5K5CAGA) || defined(CONFIG_MT9P111) || defined(CONFIG_ISX006)
+#define CFG_START_AF_FOCUS	101
+#define CFG_CHECK_AF_DONE	102
+#define CFG_CHECK_AF_CANCEL	103
+#define CFG_AF_LOCKED		104
+#define CFG_AF_UNLOCKED		105
+
+#define CFG_SET_ISO			201
+#define CFG_SET_SCENE		202
+#define CFG_SET_ZOOM_SENSOR 203
+
+#define CFG_SET_FOCUS_RECT 204
+#define CFG_SET_CANCEL_FOCUS 205
+#define CFG_SET_PARM_AF_MODE 206
+#define CFG_GET_CURRENT_ISO 207
+#define CFG_GET_CHECK_SNAPSHOT 208
+#endif
+/* LGE_CHANGE_E [junyeong.han@lge.com] */
 
 #define MOVE_NEAR	0
 #define MOVE_FAR	1
@@ -794,10 +817,23 @@ struct msm_snapshot_pp_status {
 #define CAMERA_EFFECT_WHITEBOARD	6
 #define CAMERA_EFFECT_BLACKBOARD	7
 #define CAMERA_EFFECT_AQUA		8
+
+/* LGE_CHANGE_S [junyeong.han@lge.com] Add CAMERA_EFFECT values */
+/* 2010-05-13: Add CAMERA_EFFECT values */
+//LGE_DEV_PORTING UNIVA
+#if defined (CONFIG_ISX005) || defined (CONFIG_MT9T113) || defined (CONFIG_S5K5CAGA) || defined(CONFIG_MT9P111) || defined (CONFIG_ISX006)
+#define CAMERA_EFFECT_NEGATIVE_SEPIA	9
+#define CAMERA_EFFECT_BLUE		10
+#define CAMERA_EFFECT_PASTEL		11
+#define CAMERA_EFFECT_MAX		12
+#else	/* origin */
 #define CAMERA_EFFECT_EMBOSS		9
 #define CAMERA_EFFECT_SKETCH		10
 #define CAMERA_EFFECT_NEON		11
 #define CAMERA_EFFECT_MAX		12
+#endif
+/* LGE_CHANGE_E [junyeong.han@lge.com] */
+
 
 /* QRD */
 #define CAMERA_EFFECT_BW		10
@@ -805,11 +841,13 @@ struct msm_snapshot_pp_status {
 #define CAMERA_EFFECT_REDDISH	13
 #define CAMERA_EFFECT_GREENISH	14
 
+#if !defined(CONFIG_ISX005)
 /* QRD */
 #define CAMERA_ANTIBANDING_OFF		0
 #define CAMERA_ANTIBANDING_50HZ		2
 #define CAMERA_ANTIBANDING_60HZ		1
 #define CAMERA_ANTIBANDING_AUTO		3
+#endif
 
 #define CAMERA_CONTRAST_LV0			0
 #define CAMERA_CONTRAST_LV1			1
@@ -866,6 +904,7 @@ struct msm_snapshot_pp_status {
 /* QRD */
 #define CFG_SET_EXPOSURE_COMPENSATION 35
 
+#if !defined(CONFIG_ISX005)
 #define  CAMERA_WB_AUTO               1 /* This list must match aeecamera.h */
 #define  CAMERA_WB_CUSTOM             2
 #define  CAMERA_WB_INCANDESCENT       3
@@ -874,6 +913,7 @@ struct msm_snapshot_pp_status {
 #define  CAMERA_WB_CLOUDY_DAYLIGHT    6
 #define  CAMERA_WB_TWILIGHT           7
 #define  CAMERA_WB_SHADE              8
+#endif
 
 #define CAMERA_EXPOSURE_COMPENSATION_LV0			12
 #define CAMERA_EXPOSURE_COMPENSATION_LV1			6

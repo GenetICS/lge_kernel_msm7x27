@@ -189,7 +189,8 @@ static void process_callback(struct audio *audio,
 		for (i = 0; i < MAX_VOC_FRAME_SIZE; i++, ++src)
 			xdr_send_int16(&audio->client->cb_xdr, src);
 		frame->used = 0;
-		audio->out_tail = ((++audio->out_tail) % MAX_VOC_FRAMES);
+		++audio->out_tail;
+		audio->out_tail %= MAX_VOC_FRAMES;
 		wake_up(&audio->wait);
 	} else {
 		status = VOICE_PCM_DATA_STATUS_UNAVAILABLE;
@@ -415,7 +416,8 @@ static ssize_t audio_write(struct file *file, const char __user *buf,
 			break;
 		}
 		frame->used = xfer;
-		audio->out_head = ((++audio->out_head) % MAX_VOC_FRAMES);
+		++audio->out_head;
+		audio->out_head %= MAX_VOC_FRAMES;
 		count -= xfer;
 		buf += xfer;
 	}
