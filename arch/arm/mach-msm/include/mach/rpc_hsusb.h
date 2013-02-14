@@ -61,39 +61,7 @@ void msm_fsusb_rpc_deinit(void);
 
 /* wrapper to send pid and serial# info to bootloader */
 int usb_diag_update_pid_and_serial_num(uint32_t pid, const char *snum);
-#else
-static inline int msm_hsusb_rpc_connect(void) { return 0; }
-static inline int msm_hsusb_phy_reset(void) { return 0; }
-static inline int msm_hsusb_vbus_powerup(void) { return 0; }
-static inline int msm_hsusb_vbus_shutdown(void) { return 0; }
-static inline int msm_hsusb_reset_rework_installed(void) { return 0; }
-static inline int msm_hsusb_enable_pmic_ulpidata0(void) { return 0; }
-static inline int msm_hsusb_disable_pmic_ulpidata0(void) { return 0; }
-static inline int msm_hsusb_rpc_close(void) { return 0; }
-
-static inline int msm_chg_rpc_connect(void) { return 0; }
-static inline int msm_chg_usb_charger_connected(uint32_t type) { return 0; }
-static inline int msm_chg_usb_i_is_available(uint32_t sample) { return 0; }
-static inline int msm_chg_usb_i_is_not_available(void) { return 0; }
-static inline int msm_chg_usb_charger_disconnected(void) { return 0; }
-static inline int msm_chg_rpc_close(void) { return 0; }
-
-#ifdef CONFIG_USB_GADGET_MSM_72K
-static inline int hsusb_chg_init(int connect) { return 0; }
-static inline void hsusb_chg_vbus_draw(unsigned mA) { }
-static inline void hsusb_chg_connected(enum chg_type chgtype) { }
-#endif
-
-static inline int msm_fsusb_rpc_init(struct msm_otg_ops *ops) { return 0; }
-static inline int msm_fsusb_init_phy(void) { return 0; }
-static inline int msm_fsusb_reset_phy(void) { return 0; }
-static inline int msm_fsusb_suspend_phy(void) { return 0; }
-static inline int msm_fsusb_resume_phy(void) { return 0; }
-static inline int msm_fsusb_rpc_close(void) { return 0; }
-static inline int msm_fsusb_remote_dev_disconnected(void) { return 0; }
-static inline int msm_fsusb_set_remote_wakeup(void) { return 0; }
-static inline void msm_fsusb_rpc_deinit(void) { }
-static inline int
-usb_diag_update_pid_and_serial_num(uint32_t pid, const char *snum) { return 0; }
+//static inline int
+//usb_diag_update_pid_and_serial_num(uint32_t pid, const char *snum) { return 0; }
 #endif
 #endif

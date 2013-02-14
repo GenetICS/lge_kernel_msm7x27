@@ -171,6 +171,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
 				  -e s/sh[234].*/sh/ )
 
+SUBARCH := arm
+
 # Cross compiling and selecting different set of gcc/bin-utils
 # ---------------------------------------------------------------------------
 #
@@ -330,7 +332,7 @@ include $(srctree)/scripts/Kbuild.include
 
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-REAL_CC		= $(CROSS_COMPILE)gcc
+CC		= $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -347,11 +349,12 @@ CHECK		= sparse
 
 # Use the wrapper for the compiler.  This wrapper scans for new
 # warnings and causes the build to stop upon encountering them.
-CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
+#CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
 
+LGE_CF    = -D__CHECK_ENDIAN__ -Wcast-truncate -Wno-paren-string -Wtypesign
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
-		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
+		  -Wbitwise -Wno-return-void $(CF) $(LGE_CF)
+CFLAGS_MODULE   = -fno-pic
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
 CFLAGS_KERNEL	=
@@ -661,6 +664,12 @@ ifneq ($(KCFLAGS),)
         $(call warn-assign,CFLAGS)
         KBUILD_CFLAGS += $(KCFLAGS)
 endif
+
+#LGE_CHANGE_S, [Data_Patch_GB_US_65] for operator/country checking by d3sw1-data@lge.com
+ifeq (E0TRF, $(TARGET_CARRIER))
+KBUILD_CFLAGS   += -DLGE_TRACFONE_US
+endif
+#LGE_CHANGE_E, [Data_Patch_GB_US_65] for operator/country checking by d3sw1-data@lge.com
 
 # Use --build-id when available.
 LDFLAGS_BUILD_ID = $(patsubst -Wl$(comma)%,%,\

@@ -35,11 +35,23 @@
  *
  */
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_VIC_BASE          IOMEM(0xFA000000)
+#else  /* original */
+#define MSM_VIC_BASE          IOMEM(0xE0000000)
+#endif
 #define MSM_VIC_PHYS          0xC0000000
 #define MSM_VIC_SIZE          SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_CSR_BASE          IOMEM(0xFA001000)
+#else  /* original */
+#define MSM_CSR_BASE          IOMEM(0xE0001000)
+#endif
 #define MSM_CSR_PHYS          0xC0100000
 #define MSM_CSR_SIZE          SZ_4K
 
@@ -51,23 +63,53 @@
 
 #define MSM_QGIC_DIST_BASE    MSM_VIC_BASE
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_GPIO1_BASE        IOMEM(0xFA003000)
+#else  /* original */
+#define MSM_GPIO1_BASE        IOMEM(0xE0003000)
+#endif
 #define MSM_GPIO1_PHYS        0xA9200000
 #define MSM_GPIO1_SIZE        SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_GPIO2_BASE        IOMEM(0xFA004000)
+#else  /* original */
+#define MSM_GPIO2_BASE        IOMEM(0xE0004000)
+#endif
 #define MSM_GPIO2_PHYS        0xA9300000
 #define MSM_GPIO2_SIZE        SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_CLK_CTL_BASE      IOMEM(0xFA005000)
+#else  /* original */
+#define MSM_CLK_CTL_BASE      IOMEM(0xE0005000)
+#endif
 #define MSM_CLK_CTL_PHYS      0xA8600000
 #define MSM_CLK_CTL_SIZE      SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_L2CC_BASE         IOMEM(0xFA006000)
+#else	/* origin */
+#define MSM_L2CC_BASE         IOMEM(0xE0006000)
+#endif
 #define MSM_L2CC_PHYS         0xC0400000
 #define MSM_L2CC_SIZE         SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_SHARED_RAM_BASE   IOMEM(0xFA100000)
+#else  /* original */
+#define MSM_SHARED_RAM_BASE   IOMEM(0xE0100000)
+#endif
 #define MSM_SHARED_RAM_SIZE   SZ_1M
 
 #define MSM_UART1_PHYS        0xA9A00000
@@ -79,14 +121,39 @@
 #define MSM_UART3_PHYS        0xA9C00000
 #define MSM_UART3_SIZE        SZ_4K
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_MDC_BASE	      IOMEM(0xFA200000)
+#else  /* original */
+#define MSM_MDC_BASE          IOMEM(0xE0200000)
+#endif
 #define MSM_MDC_PHYS	      0xAA500000
 #define MSM_MDC_SIZE	      SZ_1M
 
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
 #define MSM_AD5_BASE          IOMEM(0xFA300000)
+#else  /* original */
+#define MSM_AD5_BASE          IOMEM(0xE0300000)
+#endif
 #define MSM_AD5_PHYS          0xAC000000
 #define MSM_AD5_SIZE          (SZ_1M*13)
 
 #define MSM_STRONGLY_ORDERED_PAGE  0xFA0F0000
+
+#if defined(CONFIG_MACH_LGE)
+/* vibrator for MN Register */
+#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
+/* 2010-06-29 [junyeong.han@lge.com] Support 512MB SDRAM */
+/* To support 512MB SDRAM in VMSPLIT_3G */
+#define MSM_WEB_BASE          IOMEM(0xF100C000)
+#else  /* origin */
+#define MSM_WEB_BASE          IOMEM(0xE100C000)
+#endif
+#define MSM_WEB_PHYS          0xA9D00040 //0xA9D00000 in code.
+#define MSM_WEB_SIZE          SZ_4K
+#endif /* CONFIG_MACH_LGE */
 
 #endif

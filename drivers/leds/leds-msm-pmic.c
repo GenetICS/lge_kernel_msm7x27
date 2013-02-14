@@ -19,14 +19,33 @@
 
 #include <mach/pmic.h>
 
-#define MAX_KEYPAD_BL_LEVEL	16
+#if defined (CONFIG_LGE_UNIFIED_LED)
+#include <mach/board_lge.h>
+
+struct msm_pmic_leds_pdata *leds_pdata = 0;
+#endif
+
+/*LED has 15 steps (10mA per step). LED's  max power capacity is 150mA. (0~255 level)*/
+#define MAX_KEYPAD_BL_LEVEL	16	// 150mA
+#define TUNED_MAX_KEYPAD_BL_LEVEL	127	// 60mA
 
 static void msm_keypad_bl_led_set(struct led_classdev *led_cdev,
 	enum led_brightness value)
 {
 	int ret;
-
-	ret = pmic_set_led_intensity(LED_KEYPAD, value / MAX_KEYPAD_BL_LEVEL);
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	ret = leds_pdata->msm_keypad_led_set(value / TUNED_MAX_KEYPAD_BL_LEVEL);
+#else  /* origin */
+#ifdef CONFIG_MACH_MSM7X27_THUNDERA
+	/* jinkyu.choi@lge.com
+	 * P505, use the android led interface values, 255,127,0
+	 * LED current is controlled by arm9 AMSS with the given values.
+	 */
+	ret = pmic_set_led_intensity(LED_KEYPAD, value);
+#else
+	ret = pmic_set_led_intensity(LED_KEYPAD, value / TUNED_MAX_KEYPAD_BL_LEVEL);
+#endif /* end of CONFIG_MACH_MSM7X27_THUNDERA */
+#endif
 	if (ret)
 		dev_err(led_cdev->dev, "can't set keypad backlight\n");
 }
@@ -40,6 +59,14 @@ static struct led_classdev msm_kp_bl_led = {
 static int msm_pmic_led_probe(struct platform_device *pdev)
 {
 	int rc;
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	leds_pdata = pdev->dev.platform_data;
+#endif
+
+#ifndef CONFIG_LGE_UNIFIED_LED
+	if (pdev->dev.platform_data)
+		msm_kp_bl_led.name = pdev->dev.platform_data;
+#endif
 
 	rc = led_classdev_register(&pdev->dev, &msm_kp_bl_led);
 	if (rc) {
@@ -47,12 +74,18 @@ static int msm_pmic_led_probe(struct platform_device *pdev)
 		return rc;
 	}
 	msm_keypad_bl_led_set(&msm_kp_bl_led, LED_OFF);
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	leds_pdata->register_custom_leds(pdev);
+#endif
 	return rc;
 }
 
 static int __devexit msm_pmic_led_remove(struct platform_device *pdev)
 {
 	led_classdev_unregister(&msm_kp_bl_led);
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	leds_pdata->unregister_custom_leds();
+#endif
 
 	return 0;
 }
@@ -63,6 +96,9 @@ static int msm_pmic_led_suspend(struct platform_device *dev,
 {
 	led_classdev_suspend(&msm_kp_bl_led);
 
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	leds_pdata->suspend_custom_leds();
+#endif
 	return 0;
 }
 
@@ -70,6 +106,9 @@ static int msm_pmic_led_resume(struct platform_device *dev)
 {
 	led_classdev_resume(&msm_kp_bl_led);
 
+#if defined (CONFIG_LGE_UNIFIED_LED)
+	leds_pdata->resume_custom_leds();
+#endif
 	return 0;
 }
 #else
@@ -77,11 +116,27 @@ static int msm_pmic_led_resume(struct platform_device *dev)
 #define msm_pmic_led_resume NULL
 #endif
 
+#ifdef CONFIG_MACH_LGE
+/* 
+ * 2011-03-08, jinkyu.choi@lge.com
+ * if using the VBAT power,
+ * we should turn off the leds when reboot or power down.
+ */
+static void msm_pmic_led_shutdown(struct platform_device *dev)
+{
+	msm_keypad_bl_led_set(&msm_kp_bl_led, LED_OFF);
+	//printk("%s is done!\n", __func__);
+}
+#endif
+
 static struct platform_driver msm_pmic_led_driver = {
 	.probe		= msm_pmic_led_probe,
 	.remove		= __devexit_p(msm_pmic_led_remove),
 	.suspend	= msm_pmic_led_suspend,
 	.resume		= msm_pmic_led_resume,
+#ifdef  CONFIG_MACH_LGE
+	.shutdown	= msm_pmic_led_shutdown,
+#endif
 	.driver		= {
 		.name	= "pmic-leds",
 		.owner	= THIS_MODULE,

@@ -21,4 +21,7 @@ struct msm_handset_platform_data {
 
 void report_headset_status(bool connected);
 
+#if defined(CONFIG_MACH_LGE)
+void rpc_server_hs_register_callback(void *callback_func);
+#endif
 #endif

@@ -1762,6 +1762,14 @@ static struct notifier_block msm_reboot_notifier = {
 	.notifier_call = msm_reboot_call,
 };
 
+#if defined(CONFIG_MACH_LGE)
+void lge_set_reboot_reason(unsigned int reason)
+{
+        restart_reason = reason;
+
+        return;
+}
+#endif
 
 /******************************************************************************
  *
