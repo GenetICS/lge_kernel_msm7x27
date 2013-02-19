@@ -45,6 +45,10 @@
 #include <asm/vfp.h>
 #endif
 
+#ifdef CONFIG_MACH_LGE
+#include <mach/board_lge.h>
+#endif
+
 #ifdef CONFIG_MSM_MEMORY_LOW_POWER_MODE_SUSPEND_DEEP_POWER_DOWN
 #include <mach/msm_migrate_pages.h>
 #endif
@@ -1720,9 +1724,49 @@ static struct platform_suspend_ops msm_pm_ops = {
 
 static uint32_t restart_reason = 0x776655AA;
 
+#ifdef CONFIG_MACH_LGE
+/* LGE_CHANGE
+ * flush console before reboot
+ * from google's mahimahi kernel
+ * 2010-05-04, cleaneye.kim@lge.com
+ */
+
+static bool console_flushed;
+
+void msm_pm_flush_console(void)
+{
+	if (console_flushed)
+		return;
+
+	console_flushed = true;
+
+	printk("\n");
+	printk(KERN_EMERG "Restarting %s\n", linux_banner);
+
+	mdelay(50);
+
+	local_irq_disable();
+}
+#endif
+
 static void msm_pm_power_off(void)
 {
+
+#ifdef CONFIG_MACH_LGE
+	/* To prevent Phone freezing during power off
+	 * blue.park@lge.com 2010-04-14 <To prevent Phone freezing during power off>
+	 */
+	smsm_change_state_nonotify(SMSM_APPS_STATE,
+						  0, SMSM_SYSTEM_POWER_DOWN);
+#endif
+
+/* FIXME: Block the rpcrouter close when system restart
+ *	  Sometimes, RPC CALL is called atfer RPC is closed
+ *        taehung.kim@lge.com
+ */
+#if 0
 	msm_rpcrouter_close();
+#endif
 	msm_proc_comm(PCOM_POWER_DOWN, 0, 0);
 	for (;;)
 		;
@@ -1730,8 +1774,54 @@ static void msm_pm_power_off(void)
 
 static void msm_pm_restart(char str, const char *cmd)
 {
+#ifdef CONFIG_MACH_LGE
+	/* LGE_CHANGE
+	 * flush console before reboot
+	 * from google's mahimahi kernel
+	 * 2010-05-04, cleaneye.kim@lge.com
+	 */
+    unsigned long irqflags;
+	static DEFINE_SPINLOCK(state_lock);
+	msm_pm_flush_console();
+	if (restart_reason == 0x776655BB) {
+		void *copy_addr;
+		unsigned int *rc_buffer;
+
+		copy_addr = lge_get_fb_copy_virt_addr();
+		*((unsigned *)copy_addr) = restart_reason;
+
+		rc_buffer = (unsigned int *)get_ram_console_buffer();
+		*rc_buffer = 0x0;
+
+		spin_lock_irqsave(&state_lock, irqflags);
+		/*
+		 * 2011-03-27, jinkyu.choi@lge.com
+		 * instead of the arm9 crash, use the PCOM_RESET_CHIP_IMM for fast reboot.
+		 */
+		msm_proc_comm(PCOM_RESET_CHIP_IMM, &restart_reason, 0);
+
+		while (1)
+			;
+	}
+#endif
+
+/* FIXME: Block the rpcrouter close when system restart
+ *	  Sometimes, RPC CALL is called atfer RPC is closed
+ *        taehung.kim@lge.com
+ */
+#if 0
 	msm_rpcrouter_close();
+#endif
+	/*
+	 * 2011-04-20, jinkyu.choi@lge.com,
+	 * use the PCOM_RESET_CHIP_IMM,
+	 * because the reboot reason is overwritten by another rpoc_com such as ebi1_clk_min
+	 */
+#ifdef CONFIG_MACH_LGE
+	msm_proc_comm(PCOM_RESET_CHIP_IMM, &restart_reason, 0);
+#else /* QCT origin */
 	msm_proc_comm(PCOM_RESET_CHIP, &restart_reason, 0);
+#endif
 
 	for (;;)
 		;
@@ -1751,6 +1841,11 @@ static int msm_reboot_call
 		} else if (!strncmp(cmd, "oem-", 4)) {
 			unsigned code = simple_strtoul(cmd + 4, 0, 16) & 0xff;
 			restart_reason = 0x6f656d00 | code;
+		} else if (!strncmp(cmd, "", 1)) {
+			restart_reason = 0x776655AA;
+		} else if (!strncmp(cmd, "charge_reset", 12)) {
+			restart_reason = 0x776655BB;
+
 		} else {
 			restart_reason = 0x77665501;
 		}

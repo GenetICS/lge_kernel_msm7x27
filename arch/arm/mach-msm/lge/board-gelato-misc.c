@@ -29,6 +29,7 @@
 #include <asm/io.h>
 #include <mach/rpc_server_handset.h>
 #include <mach/board_lge.h>
+#include <mach/msm_rpcrouter.h>
 #include "board-gelato.h"
 
 #ifdef CONFIG_LGE_FUEL_GAUGE
@@ -294,13 +295,50 @@ enum {
 	EAR_INJECT = 1,
 };
 
+struct rpc_snd_set_hook_mode_args {
+	uint32_t mode;
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct snd_set_hook_mode_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_set_hook_mode_args args;
+};
+
+struct snd_set_hook_param_rep {
+	struct rpc_reply_hdr hdr;
+	uint32_t get_mode;
+};
+
+#define SND_SET_HOOK_MODE_PROC 75
+#define RPC_SND_PROG 0x30000002
+
+#define RPC_SND_VERS 0x00020001
+
 static int gelato_gpio_earsense_work_func(void)
 {
 	int state;
 	int gpio_value;
+	struct snd_set_hook_param_rep hkrep;
+	struct snd_set_hook_mode_msg hookmsg;
+	int rc;
+
+	struct msm_rpc_endpoint *ept = msm_rpc_connect_compatible(RPC_SND_PROG,
+							   RPC_SND_VERS, 0);
+	if (IS_ERR(ept)) {
+		rc = PTR_ERR(ept);
+		ept = NULL;
+		printk(KERN_ERR"failed to connect snd svc, error %d\n", rc);
+	}
+
+	hookmsg.args.cb_func = -1;
+	hookmsg.args.client_data = 0;
+	
 	/*LGE_CHANGE_S, [yeri.lee@lge.com] , 2011-04-21, Earjack detect pop noise - control ARM9 
 	struct vreg *gp4_vreg = vreg_get(0, "gp4");
 	LGE_CHANGE_E, [yeri.lee@lge.com] , 2011-04-21*/
+	
 	
 	gpio_value = gpio_get_value(GPIO_EAR_SENSE);
 	printk(KERN_INFO"%s: ear sense detected : %s\n", __func__, 
@@ -310,14 +348,32 @@ static int gelato_gpio_earsense_work_func(void)
 		/*LGE_CHANGE_S, [yeri.lee@lge.com] , 2011-04-21, Earjack detect pop noise - control ARM9 
 		vreg_disable(gp4_vreg);
 		LGE_CHANGE_E, [yeri.lee@lge.com] , 2011-04-21*/
+		hookmsg.args.mode = cpu_to_be32(0);
 	} else {
 		state = EAR_STATE_INJECT;
 		/*LGE_CHANGE_S, [yeri.lee@lge.com] , 2011-04-21, Earjack detect pop noise - control ARM9 
 		vreg_set_level(gp4_vreg, 1800);
 		vreg_enable(gp4_vreg);
 		LGE_CHANGE_E, [yeri.lee@lge.com] , 2011-04-21*/
+		hookmsg.args.mode = cpu_to_be32(1);
 	}
 
+	if(ept) {
+		rc = msm_rpc_call_reply(ept,
+				SND_SET_HOOK_MODE_PROC,
+				&hookmsg, sizeof(hookmsg),&hkrep, sizeof(hkrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		} else {
+		    printk("send success\n");
+		}
+	 } else {
+		printk(KERN_ERR "%s:ext_snd is NULL\n", __func__);
+	 }
+	 rc = msm_rpc_close(ept);
+	 if (rc < 0)
+		printk(KERN_ERR"msm_rpc_close failed\n");
+	
 	return state;
 }
 

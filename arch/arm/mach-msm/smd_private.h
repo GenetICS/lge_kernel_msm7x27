@@ -103,6 +103,14 @@ void *smem_alloc(unsigned id, unsigned size)
 #define SMD_CHANNELS             64
 #define SMD_HEADER_SIZE          20
 
+#ifdef CONFIG_MACH_LGE
+/* Make a api to not report a changed SMSM state to other processor
+ * blue.park@lge.com 2010-04-14
+ */
+int smsm_change_state_nonotify(uint32_t smsm_entry,
+		      uint32_t clear_mask, uint32_t set_mask);
+#endif
+
 /* 'type' field of smd_alloc_elm structure
  * has the following breakup
  * bits 0-7   -> channel type

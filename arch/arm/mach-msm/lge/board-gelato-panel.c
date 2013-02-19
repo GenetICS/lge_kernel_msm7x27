@@ -23,7 +23,7 @@
 #include "board-gelato.h"
 
 /* setting board revision information */
-static int gelato_panel_id = PANEL_ID_AUO;
+int gelato_panel_id = PANEL_ID_HITACHI;
 
 static int __init gelato_panel_setup(char *panel_id)
 {

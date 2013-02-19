@@ -25,8 +25,10 @@
 #include <mach/board.h>
 #include <mach/board_lge.h>
 #include <mach/rpc_server_handset.h>
+#include <mach/pmic.h>
 
 #include "board-gelato.h"
+#include "../proc_comm.h"
 static int prox_power_set(unsigned char onoff);
 
 /* LGE_S [ynj.kim@lge.com] 2010-05-15 : atcmd virtual device */
@@ -123,8 +125,8 @@ static struct gpio_event_matrix_info gelato_keypad_matrix_info = {
 	.input_gpios	= keypad_row_gpios,
 	.noutputs	= 0,
 	.ninputs	= ARRAY_SIZE(keypad_row_gpios),
-	.settle_time.tv.nsec = 40 * NSEC_PER_USEC,
-	.poll_time.tv.nsec = 20 * NSEC_PER_MSEC,
+	.settle_time.tv_nsec = 40 * NSEC_PER_USEC,
+	.poll_time.tv_nsec = 20 * NSEC_PER_MSEC,
 	.flags		= GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_PRINT_UNMAPPED_KEYS | GPIOKPF_DRIVE_INACTIVE
 };
 
@@ -223,6 +225,27 @@ static int ts_config_gpio(int config)
 
 	return 0;
 }
+
+static int ts_set_pulldown(unsigned int onoff)
+{
+	int rc;
+	unsigned id;
+
+	id = PM_VREG_PDOWN_SYNT_ID;
+	rc = msm_proc_comm(PCOM_VREG_PULLDOWN, &onoff, &id);
+	if (rc != 0) {
+		printk("[Touch] vreg_set_pulldown failed\n");
+		return -1;
+	}
+	id = PM_VREG_PDOWN_MMC_ID;
+	rc = msm_proc_comm(PCOM_VREG_PULLDOWN, &onoff, &id);
+	if (rc != 0) {
+		printk("[Touch] vreg_set_pulldown failed\n");
+		return -1;
+	}
+	return 0;
+}
+
 static int ts_set_vreg(unsigned char onoff)
 {
 	struct vreg *vreg_touch = NULL;
@@ -273,6 +296,9 @@ static int ts_set_vreg(unsigned char onoff)
 
 		vreg_set_level(vreg_touch, 0);
 		vreg_disable(vreg_touch);
+
+		msleep(20);  // wait 20ms
+
 		//ts_config_gpio(0);
 	}
 	return 0;
@@ -283,6 +309,7 @@ static struct synaptics_i2c_rmi_platform_data ts_pdata_synaptics = {
 	.irqflags = IRQF_TRIGGER_FALLING,
 	.use_irq = true,
 	.power = ts_set_vreg,
+	.pulldown = ts_set_pulldown,
 };
 
 static struct i2c_board_info ts_i2c_bdinfo_synaptics[] = {
