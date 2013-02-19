@@ -181,7 +181,8 @@ static unsigned sdcc_cfg_data[][6] = {
 
 static unsigned long vreg_sts, gpio_sts;
 static unsigned mpp_mmc = 2;
-static struct regulator *vreg_mmc;
+static struct vreg *vreg_mmc;
+//static struct regulator *vreg_mmc;
 
 static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 {
@@ -225,7 +226,8 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 				     MPP_CFG(MPP_DLOGIC_LVL_MSMP,
 				     MPP_DLOGIC_OUT_CTRL_LOW));
 			} else
-				rc = regulator_disable(vreg_mmc);
+				rc = vreg_disable(vreg_mmc);
+//				rc = regulator_disable(vreg_mmc);
 			if (rc)
 				printk(KERN_ERR "%s: return val: %d \n",
 					__func__, rc);
@@ -240,12 +242,15 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 			     MPP_DLOGIC_OUT_CTRL_HIGH));
 		} else {
 #ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
-			rc = regulator_set_voltage(vreg_mmc, VREG_SD_LEVEL*1000, VREG_SD_LEVEL*1000);
-#else		
-			rc = regulator_set_voltage(vreg_mmc, 2850000, 2850000);
+			rc = vreg_set_level(vreg_mmc, VREG_SD_LEVEL);
+//			rc = regulator_set_voltage(vreg_mmc, VREG_SD_LEVEL*1000, VREG_SD_LEVEL*1000);
+#else
+			rc = vreg_set_level(vreg_mmc, 2850);
+//			rc = regulator_set_voltage(vreg_mmc, 2850000, 2850000);
 #endif
 			if (!rc)
-				rc = regulator_enable(vreg_mmc);
+				rc = vreg_enable(vreg_mmc);
+//				rc = regulator_enable(vreg_mmc);
 		}
 		if (rc)
 			printk(KERN_ERR "%s: return val: %d \n",
@@ -308,9 +313,11 @@ static struct mmc_platform_data msm7x2x_sdc1_data = {
 static void __init msm7x2x_init_mmc(void)
 {
 	if (!machine_is_msm7x25_ffa() && !machine_is_msm7x27_ffa()) {
-		vreg_mmc = regulator_get(NULL, "wlan");
+		vreg_mmc = vreg_get(NULL, "wlan");
+//		vreg_mmc = regulator_get(NULL, "wlan");
 		if (IS_ERR(vreg_mmc)) {
-			printk(KERN_ERR "%s: regulator get failed (%ld)\n",
+//			printk(KERN_ERR "%s: regulator get failed (%ld)\n",
+			printk(KERN_ERR "%s: vreg get failed (%ld)\n",
 			       __func__, PTR_ERR(vreg_mmc));
 			return;
 		}

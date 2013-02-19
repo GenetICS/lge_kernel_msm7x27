@@ -19,7 +19,7 @@
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <asm/setup.h>
-#include "pm.h"
+#include "../pm.h"
 
 /* LGE_S [ynj.kim@lge.com] 2010-05-21 : atcmd - virtual device */
 #define KEY_SPEAKERMODE 241 // KEY_VIDEO_NEXT is not used in GED

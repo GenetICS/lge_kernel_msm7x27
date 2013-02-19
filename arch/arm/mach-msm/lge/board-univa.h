@@ -19,7 +19,7 @@
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <asm/setup.h>
-#include "pm.h"
+#include "../pm.h"
 
 //LGE_DEV_PORTING UNIVA_S jonghyuck.shin 20110328 remove the EVB Define because of REV.A
 //#define UNIVA_EVB
