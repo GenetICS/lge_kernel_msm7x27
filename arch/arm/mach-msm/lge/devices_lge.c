@@ -459,12 +459,13 @@ static int hsusb_rpc_connect(int connect)
 #endif
 
 #ifdef CONFIG_USB_MSM_OTG_72K
+struct vreg *vreg_3p3;
 static int msm_hsusb_ldo_init(int init)
 {
-	static struct regulator *reg_hsusb;
-	int rc;
+//	static struct regulator *reg_hsusb;
+//	int rc;
 	if (init) {
-		reg_hsusb = regulator_get(NULL, "usb");
+/*		reg_hsusb = regulator_get(NULL, "usb");
 		if (IS_ERR(reg_hsusb)) {
 			rc = PTR_ERR(reg_hsusb);
 			pr_err("%s: could not get regulator: %d\n",
@@ -485,7 +486,7 @@ static int msm_hsusb_ldo_init(int init)
 					__func__, rc);
 			goto usb_reg_fail;
 		}
-
+*/
 		/*
 		 * PHY 3.3V analog domain(VDDA33) is powered up by
 		 * an always enabled power supply (LP5900TL-3.3).
@@ -495,21 +496,29 @@ static int msm_hsusb_ldo_init(int init)
 		 * off here.
 		 */
 
-		rc = regulator_disable(reg_hsusb);
+		vreg_3p3 = vreg_get(NULL, "usb");
+		if (IS_ERR(vreg_3p3))
+			return PTR_ERR(vreg_3p3);
+		vreg_enable(vreg_3p3);
+		vreg_disable(vreg_3p3);
+		vreg_put(vreg_3p3);
+
+
+/*		rc = regulator_disable(reg_hsusb);
 		if (rc < 0) {
 			pr_err("%s: could not disable regulator: %d\n",
 					__func__, rc);
 			goto usb_reg_fail;
 		}
 
-		regulator_put(reg_hsusb);
+		regulator_put(reg_hsusb);*/
 	}
 
 	return 0;
-usb_reg_fail:
+/*usb_reg_fail:
 	regulator_put(reg_hsusb);
 out:
-	return rc;
+	return rc;*/
 }
 
 static int msm_hsusb_pmic_notif_init(void (*callback)(int online), int init)

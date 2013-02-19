@@ -252,29 +252,46 @@ static struct platform_device ts_i2c_device = {
 	.dev.platform_data = &ts_i2c_pdata,
 };
 
+static int ts_power_save_on;
 static int ts_set_vreg(unsigned char onoff)
 {
-	struct regulator *vreg_touch = regulator_get(NULL, "synt");
-	int rc;
+	int rc = 0;
+	static struct regulator *vreg_touch;
 
-	printk("[Touch] %s() onoff:%d\n",__FUNCTION__, onoff);
+	if (!ts_power_save_on) {
+		vreg_touch = regulator_get(0, "synt");
+		if (IS_ERR_OR_NULL(vreg_touch)) {
+			pr_err("could not get vreg_touch, rc = %ld\n",
+				PTR_ERR(vreg_touch));
+			return -ENODEV;
+		}
 
-	if(IS_ERR(vreg_touch)) {
-		printk("[Touch] regulator_get fail : touch\n");
-		return -1;
+		rc = regulator_set_voltage(vreg_touch, 3050000, 3050000);
+		if (rc) {
+			pr_err("set_voltage vreg_touch failed, rc=%d\n", rc);
+			regulator_put(vreg_touch);
+			return -EINVAL;
+		}
+
+		ts_power_save_on = true;
 	}
 
-	if (onoff) {
-		rc = regulator_set_voltage(vreg_touch, 3050000, 3050000);
-		if (rc != 0) {
-			printk("[Touch] vreg_set_level failed\n");
-			return -1;
-		}
-		regulator_enable(vreg_touch);
-	} else
-		regulator_disable(vreg_touch);
+	printk("[Touch] %s() onoff:%d\n", __FUNCTION__, onoff);
 
-	return 0;
+	if (onoff) {
+		rc = regulator_enable(vreg_touch);
+		if (rc) {
+			pr_err("enable vreg_touch failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+	} else {
+		rc = regulator_disable(vreg_touch);
+		if (rc) {
+			pr_err("disable vreg_touch failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+	}
+	return rc;
 }
 
 static struct touch_platform_data ts_pdata = {
@@ -328,29 +345,81 @@ static void kr_exit(void)
 {
 }
 
+static struct regulator *gp3_vreg;
+static struct regulator *gp6_vreg;
+static int Accel_Proximity_Ecompass_power_save_on;
+static int Accel_Proximity_Ecompass_power_save(void)
+{
+	int rc = 0;
+
+	if (!Accel_Proximity_Ecompass_power_save_on) {
+		gp3_vreg = regulator_get(0, "gp3");
+		if (IS_ERR_OR_NULL(gp3_vreg)) {
+			pr_err("could not get gp3_vreg, rc = %ld\n",
+				PTR_ERR(gp3_vreg));
+			return -ENODEV;
+		}
+
+		gp6_vreg = regulator_get(0, "gp6");
+		if (IS_ERR_OR_NULL(gp6_vreg)) {
+			pr_err("could not get gp6_vreg, rc = %ld\n",
+				PTR_ERR(gp6_vreg));
+			regulator_put(gp3_vreg);
+			return -ENODEV;
+		}
+
+		rc = regulator_set_voltage(gp3_vreg, 3000000, 3000000);
+		if (rc) {
+			pr_err("set_voltage gp3_vreg failed, rc=%d\n", rc);
+			regulator_put(gp3_vreg);
+			regulator_put(gp6_vreg);
+			return -EINVAL;
+		}
+
+		rc = regulator_set_voltage(gp6_vreg, 2800000, 2800000);
+		if (rc) {
+			pr_err("set_voltage gp6_vreg failed, rc=%d\n", rc);
+			regulator_put(gp3_vreg);
+			regulator_put(gp6_vreg);
+			return -EINVAL;
+		}
+
+		Accel_Proximity_Ecompass_power_save_on = true;
+	}
+
+	return rc;
+}
+
 static int accel_power_on(void)
 {
-	int ret = 0;
-	struct regulator *gp3_vreg = regulator_get(NULL, "gp3");
+	int rc = 0;
+	Accel_Proximity_Ecompass_power_save();
+	rc = regulator_enable(gp3_vreg);
 
-	printk("[Accelerometer] %s() : Power On\n",__FUNCTION__);
+	printk("[Accelerometer] %s() onoff:%d\n", __FUNCTION__, 1);
 
-	regulator_set_voltage(gp3_vreg, 3000000, 3000000);
-	regulator_enable(gp3_vreg);
+	if (rc) {
+		pr_err("enable gp3_vreg failed, rc=%d\n", rc);
+		return -ENODEV;
+	}
 
-	return ret;
+	return rc;
 }
 
 static int accel_power_off(void)
 {
-	int ret = 0;
-	struct regulator *gp3_vreg = regulator_get(NULL, "gp3");
+	int rc = 0;
+	Accel_Proximity_Ecompass_power_save();
+	rc = regulator_disable(gp3_vreg);
 
-	printk("[Accelerometer] %s() : Power Off\n",__FUNCTION__);
+	printk("[Accelerometer] %s() onoff:%d\n", __FUNCTION__, 0);
 
-	regulator_disable(gp3_vreg);
+	if (rc) {
+		pr_err("disable gp3_vreg failed, rc=%d\n", rc);
+		return -ENODEV;
+	}
 
-	return ret;
+	return rc;
 }
 
 struct kr3dh_platform_data kr3dh_data = {
@@ -422,25 +491,41 @@ static void __init thunderg_init_i2c_acceleration(int bus_num)
 /* proximity & ecompass */
 static int ecom_power_set(unsigned char onoff)
 {
-	int ret = 0;
-	struct regulator *gp3_vreg = regulator_get(NULL, "gp3");
-	struct regulator *gp6_vreg = regulator_get(NULL, "gp6");
+	int rc = 0;
 
-	printk("[Ecompass] %s() : Power %s\n",__FUNCTION__, onoff ? "On" : "Off");
+	Accel_Proximity_Ecompass_power_save();
+
+	printk("[Ecompass] %s() onoff:%d\n", __FUNCTION__, 1);
 
 	if (onoff) {
-		regulator_set_voltage(gp3_vreg, 3000000, 3000000);
-		regulator_enable(gp3_vreg);
-		/* proximity power on , when we turn off I2C line be set to low caues sensor H/W characteristic */
-		regulator_set_voltage(gp6_vreg, 2800000, 2800000);
-		regulator_enable(gp6_vreg);
-	} else {
-		regulator_disable(gp3_vreg);
-		/* proximity power off */
-		regulator_disable(gp6_vreg);
+		rc = regulator_enable(gp3_vreg);
+		if (rc) {
+			pr_err("enable gp3_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		rc = regulator_enable(gp6_vreg);
+		if (rc) {
+			pr_err("enable gp6_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+	}
+	else {
+		rc = regulator_disable(gp3_vreg);
+		if (rc) {
+			pr_err("disable gp3_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		rc = regulator_disable(gp6_vreg);
+		if (rc) {
+			pr_err("disable gp6_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
 	}
 
-	return ret;
+	return rc;
 }
 
 static struct ecom_platform_data ecom_pdata = {
@@ -451,19 +536,29 @@ static struct ecom_platform_data ecom_pdata = {
 
 static int prox_power_set(unsigned char onoff)
 {
-	int ret = 0;
-	struct regulator *gp6_vreg = regulator_get(NULL, "gp6");
+	int rc = 0;
 
-	printk("[Proximity] %s() : Power %s\n",__FUNCTION__, onoff ? "On" : "Off");
+	Accel_Proximity_Ecompass_power_save();
+
+	printk("[Proximity] %s() onoff:%d\n", __FUNCTION__, onoff);
 
 	if (onoff) {
-		regulator_set_voltage(gp6_vreg, 2800000, 2800000);
-		regulator_enable(gp6_vreg);
-	} else {
-		regulator_disable(gp6_vreg);
+		rc = regulator_enable(gp6_vreg);
+		if (rc) {
+			pr_err("enable gp6_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+	}
+	else {
+		rc = regulator_disable(gp6_vreg);
+		if (rc) {
+			pr_err("disable gp6_vreg failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
 	}
 
-	return ret;
+	return rc;
 }
 
 static struct proximity_platform_data proxi_pdata = {

@@ -13,6 +13,22 @@
 
 #include "board-msm7627-regulator.h"
 
+#if defined(CONFIG_MACH_MSM7X27_ALESSI)
+#include "lge/board-alessi.h"
+#elif defined(CONFIG_MACH_MSM7X27_GELATO)
+#include "lge/board-gelato.h"
+#elif defined(CONFIG_MACH_MSM7X27_MUSCAT)
+#include "lge/board-muscat.h"
+#elif defined(CONFIG_MACH_MSM7X27_PECAN)
+#include "lge/board-pecan.h"
+#elif defined(CONFIG_MACH_MSM7X27_THUNDERG)
+#include "lge/board-thunderg.h"
+#elif defined(CONFIG_MACH_MSM7X27_UNIVA)
+#include "lge/board-univa.h"
+#else
+#error DEFINE BOARD HEADER
+#endif
+
 #define PCOM_VREG_CONSUMERS(name) \
 	static struct regulator_consumer_supply __pcom_vreg_supply_##name[]
 
@@ -199,7 +215,11 @@ static struct proccomm_regulator_info msm7627_pcom_vreg_info[] = {
 	PCOM_VREG_LDO(ldo02,  1, NULL,  2600000,  2600000, 0, -1, 0, 0, 0, 0),
 	PCOM_VREG_LDO(ldo03, 19, NULL,  2850000,  2850000, 0, -1, 0, 0, 0, 0),
 	PCOM_VREG_LDO(ldo04,  9, NULL,  2850000,  2850000, 0, -1, 0, 0, 0, 0),
-	PCOM_VREG_LDO(ldo05, 18, NULL,  2800000,  2850000, 0, -1, 0, 0, 0, 0),
+#ifdef VREG_SD_LEVEL /* mmc detection */
+	PCOM_VREG_LDO(ldo05, 18, NULL,  VREG_SD_LEVEL*1000,  VREG_SD_LEVEL*1000, 0, -1, 0, 0, 0, 0),
+#else /* qc original */
+	PCOM_VREG_LDO(ldo05, 18, NULL,  2850000,  2850000, 0, -1, 0, 0, 0, 0),
+#endif
 	PCOM_VREG_LDO(ldo06, 16, NULL,  3300000,  3300000, 0, -1, 0, 0, 0, 0),
 	PCOM_VREG_LDO(ldo07, 12, NULL,  2700000,  2700000, 0, -1, 0, 0, 0, 0),
 	PCOM_VREG_LDO(ldo08, 14, NULL,  2700000,  3050000, 0, -1, 0, 0, 0, 0),
