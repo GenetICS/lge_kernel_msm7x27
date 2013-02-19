@@ -151,7 +151,12 @@ ram_console_write(struct console *console, const char *s, unsigned int count)
 static struct console ram_console = {
 	.name	= "ram",
 	.write	= ram_console_write,
+#if defined (CONFIG_MACH_LGE)	
+	/* LGE_CHANGES_S [lsy@lge.com] 2009-10-29, Do not reprint buffer */
+	.flags	= CON_ENABLED,
+#else	/* origin */
 	.flags	= CON_PRINTBUFFER | CON_ENABLED,
+#endif
 	.index	= -1,
 };
 

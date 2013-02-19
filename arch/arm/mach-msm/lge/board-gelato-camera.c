@@ -99,6 +99,9 @@ void config_camera_off_gpios(void)
 		ARRAY_SIZE(camera_off_gpio_table));
 }
 
+extern void mdp_load_hitachi_lut(int lut_type);
+extern int gelato_panel_id;
+
 int camera_power_on (void)
 {
 	int rc;
@@ -201,6 +204,10 @@ int camera_power_on (void)
 	mdelay(5); 
 	camera_power_state = CAM_POWER_ON;
 
+	/*Hitachi LCD LUT*/
+	if(gelato_panel_id==1){
+		mdp_load_hitachi_lut(2);
+	}
 power_on_fail:
 	return rc;
 }
@@ -274,6 +281,10 @@ int camera_power_off (void)
 	aat28xx_power(dev, 0);
 	camera_power_state = CAM_POWER_OFF;
 
+	/*Hitachi LCD LUT*/
+	if(gelato_panel_id==1){
+		mdp_load_hitachi_lut(1);
+	}
 power_off_fail:
 	return rc;
 }

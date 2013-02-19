@@ -148,6 +148,13 @@ config S5K3E2FX
 	default y
 	---help---
 	  Samsung 5M with Autofocus
+	  
+config S5K5CAGA
+	bool "Samsung S5K5CAGA (YUV 3M)"
+	depends on MSM_CAMERA && !ARCH_MSM8X60
+	default n
+	---help---
+	  SAMSUNG 3M YUV Sensor with AutoFocus
 
 config QS_S5K4E1
 	bool "Sensor qs_s5k4e1 (Samsung 5M)"

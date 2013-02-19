@@ -766,4 +766,8 @@ void mdp_ppp_dump_debug(const struct mdp_info *mdp);
 #define MDDI_VDO_PACKET_PRIM  0xC3
 #define MDDI_VDO_PACKET_SECD  0xC0
 
+#ifdef CONFIG_MACH_MSM7X27_GELATO
+extern mdp_load_hitachi_lut(int);
+#endif
+
 #endif
