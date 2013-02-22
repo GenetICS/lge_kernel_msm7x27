@@ -48,6 +48,28 @@ struct rpcsvr_platform_device
 	uint32_t vers;
 };
 
+/* Factory AT CMD feature added based on EVE 
+ * hoonylove004@lge.com 2009-12-29, [VS740] AT CMD
+ */
+#ifdef CONFIG_MACH_LGE
+typedef uint8_t   AT_STR_t;
+#define ABSOLUTE_STRING_LENGTH  500 //40 [seypark@lge.com]
+#define MAX_STRING_RET (ABSOLUTE_STRING_LENGTH/sizeof(AT_STR_t))
+
+typedef uint8_t AT_SEND_BUFFER_t;
+#define MAX_SEND_LOOP_NUM  8 // 4 => 8 kageki@lge.com
+#define ABSOLUTE_SEND_SIZE  256
+#define MAX_SEND_SIZE_BUFFER ABSOLUTE_SEND_SIZE/sizeof(AT_SEND_BUFFER_t)
+#define LIMIT_MAX_SEND_SIZE_BUFFER MAX_SEND_SIZE_BUFFER*MAX_SEND_LOOP_NUM
+
+struct retvaluestruct
+{
+	uint32_t  ret_value1;
+	uint32_t  ret_value2;
+	AT_STR_t   ret_string[MAX_STRING_RET];
+};
+#endif
+
 #define RPC_DATA_IN	0
 /*
  * Structures for sending / receiving direct RPC requests
@@ -90,6 +112,14 @@ typedef struct
 #define RPC_ACCEPTSTAT_GARBAGE_ARGS 4
 #define RPC_ACCEPTSTAT_SYSTEM_ERR 5
 #define RPC_ACCEPTSTAT_PROG_LOCKED 6
+
+#ifdef CONFIG_MACH_LGE
+/* Factory AT CMD feature added based on EVE */
+/* hoonylove004@lge.com 2009-12-29, [VS740] AT CMD */
+#define RPC_RETURN_RESULT_ERROR    7
+#define RPC_RETURN_RESULT_OK     8
+#define RPC_RETURN_RESULT_MIDDLE_OK     9
+#endif /*LG_FW_ATS_ETA_MTC*/
 	/*
 	 * Following data is dependant on accept_stat
 	 * If ACCEPTSTAT == PROG_MISMATCH then there is a
@@ -97,6 +127,35 @@ typedef struct
 	 * Otherwise the data is procedure specific
 	 */
 } rpc_accepted_reply_hdr;
+
+#ifdef CONFIG_MACH_LGE
+/* Factory AT CMD feature added based on EVE */
+/* hoonylove004@lge.com 2009-12-29, [VS740] AT CMD */
+typedef struct
+{
+	uint32_t verf_flavor;
+	uint32_t verf_length;
+	uint32_t accept_stat;
+#define RPC_ACCEPTSTAT_SUCCESS 0
+#define RPC_ACCEPTSTAT_PROG_UNAVAIL 1
+#define RPC_ACCEPTSTAT_PROG_MISMATCH 2
+#define RPC_ACCEPTSTAT_PROC_UNAVAIL 3
+#define RPC_ACCEPTSTAT_GARBAGE_ARGS 4
+#define RPC_ACCEPTSTAT_SYSTEM_ERR 5
+#define RPC_ACCEPTSTAT_PROG_LOCKED 6
+#define RPC_RETURN_RESULT_ERROR    7
+#define RPC_RETURN_RESULT_OK     8
+#define RPC_RETURN_RESULT_MIDDLE_OK 9
+
+	struct retvaluestruct retvalues;
+	/*
+	 * Following data is dependant on accept_stat
+	 * If ACCEPTSTAT == PROG_MISMATCH then there is a
+	 * 'rpc_reply_progmismatch_data' structure following the header.
+	 * Otherwise the data is procedure specific
+	 */
+} rpc_accepted_AT_reply_hdr;
+#endif
 
 struct rpc_reply_hdr
 {
@@ -110,6 +169,16 @@ struct rpc_reply_hdr
 		rpc_denied_reply_hdr dny_hdr;
 	} data;
 };
+
+#ifdef CONFIG_MACH_LGE
+/* Factory AT CMD feature added based on EVE */
+/* hoonylove004@lge.com 2009-12-29, [VS740] AT CMD */
+struct rpc_reply_AT_hdr
+{
+	struct rpc_reply_hdr reply;
+	struct retvaluestruct retvalues;
+};
+#endif
 
 struct rpc_board_dev {
 	uint32_t prog;
@@ -215,6 +284,11 @@ struct msm_rpc_server
 	int (*rpc_call2)(struct msm_rpc_server *server,
 			 struct rpc_request_hdr *req,
 			 struct msm_rpc_xdr *xdr);
+#ifdef CONFIG_MACH_LGE
+	/* Factory AT CMD feature added based on EVE */
+	/* hoonylove004@lge.com 2009-12-29, [VS740] AT CMD */
+	struct retvaluestruct  retvalue;
+#endif
 };
 
 int msm_rpc_create_server(struct msm_rpc_server *server);
