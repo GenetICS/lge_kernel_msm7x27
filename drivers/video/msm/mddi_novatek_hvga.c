@@ -19,33 +19,17 @@
  * along with this program; if not, you can find it at http://www.fsf.org
  */
 
-/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-13, V 4.0 */
-
 #include "msm_fb.h"
 #include "mddihost.h"
 #include "mddihosti.h"
 #include <asm/gpio.h>
 #include <mach/vreg.h>
-
-/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-11, from mddi_hitachi_hvga.c */
-/* LGE_CHANGE
- * Define new structure named 'msm_panel_hitachi_pdata' 
- * to use LCD initialization Flag (.initialized).
- * 2010-04-21, minjong.gong@lge.com
- */
 #include <mach/board_lge.h>
-
 
 #define PANEL_DEBUG 0
 
 #define MDDI_NOVATEK_HVGA_PANEL_MFR_NAME		(0xB9F6)
 #define MDDI_NOVATEK_HVGA_PANEL_PRODUCT_CODE	(0x5451)
-
-/* LGE_CHANGE [dojip.kim@lge.com] 2010-04-26, 
- * tentative command for 4/20,21 shipping sample 
- */
-/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-13, not any more needed */
-//#define USE_TENTATIVE_COMMAND	1
 
 #define LCD_CONTROL_BLOCK_BASE	0x110000
 #define INTFLG		LCD_CONTROL_BLOCK_BASE|(0x18)
@@ -66,7 +50,6 @@ static boolean is_lcd_on = -1;
  * XXX: TODO: change this values for INNOTEK PANEL */
 static uint32 mddi_novatek_rows_per_second = 31250;
 static uint32 mddi_novatek_rows_per_refresh = 480;
-//static uint32 mddi_novatek_usecs_per_refresh = 15360; /* rows_per_refresh / rows_per_second */
 extern boolean mddi_vsync_detect_enabled;
 
 static msm_fb_vsync_handler_type mddi_novatek_vsync_handler = NULL;
@@ -659,6 +642,7 @@ static int mddi_novatek_lcd_init(void)
 	struct msm_panel_info *pinfo;
 
 #ifdef CONFIG_FB_MSM_MDDI_AUTO_DETECT
+extern int lge_lcd_panel;
 
 //	u32 id;
 
@@ -680,13 +664,14 @@ static int mddi_novatek_lcd_init(void)
 			} else
 			#endif//BOGUS
 			{
+				lge_lcd_panel = 1;	//novatek
 				printk(KERN_INFO "NOVATEK panel detected\n");
 			}
 		} else {
 			return 0;
 		}
 	}
-#endif/*CONFIG_FB_MSM_MDDI_AUTO_DETECT*/
+#endif /*CONFIG_FB_MSM_MDDI_AUTO_DETECT*/
 
 	ret = platform_driver_register(&this_driver);
 	if (!ret) {
@@ -742,11 +727,10 @@ static void mddi_novatek_lcd_panel_poweron(void)
 {
 	/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-11, from mddi_hitachi_hvga.c */
 	/* LGE_CHANGE
-	 * Define new structure named 'msm_panel_hitachi_pdata' 
+	 * Define new structure named 'msm_panel_hitachi_pdata'
 	 * to use LCD initialization Flag (.initialized).
 	 * 2010-04-21, minjong.gong@lge.com
 	 */
-	//struct msm_panel_common_pdata *pdata = mddi_novatek_pdata;
 #if defined(CONFIG_MACH_MSM7X27_THUNDERG) || defined(CONFIG_MACH_MSM7X27_THUNDERC) || defined(CONFIG_MACH_MSM7X27_THUNDERA)
 	struct msm_panel_novatek_pdata *pdata = mddi_novatek_pdata;
 #else
@@ -776,6 +760,12 @@ static void mddi_novatek_lcd_panel_poweron(void)
 
 static void mddi_novatek_lcd_panel_poweroff(void)
 {
+	/* LGE_CHANGE [dojip.kim@lge.com] 2010-05-11, from mddi_hitachi_hvga.c */
+	/* LGE_CHANGE
+	 * Define new structure named 'msm_panel_hitachi_pdata'
+	 * to use LCD initialization Flag (.initialized).
+	 * 2010-04-21, minjong.gong@lge.com
+	 */
 #if defined(CONFIG_MACH_MSM7X27_THUNDERG) || defined(CONFIG_MACH_MSM7X27_THUNDERC) || defined(CONFIG_MACH_MSM7X27_THUNDERA)
 	struct msm_panel_novatek_pdata *pdata = mddi_novatek_pdata;
 #else
