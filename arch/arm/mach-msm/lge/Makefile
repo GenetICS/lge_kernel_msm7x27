@@ -81,16 +81,16 @@ obj-$(CONFIG_MACH_MSM7X27_ALESSI) += board-alessi-pm.o
 
 obj-$(CONFIG_MACH_LGE) += devices_lge.o
 
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats.o
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_cmd.o
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_eta.o
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_mmc.o
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_event_log.o
-#obj-$(CONFIG_LGE_ATS_UEVENT_DEVICE) += lge_ats_uevent.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_cmd.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_eta.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_mmc.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_event_log.o
+obj-$(CONFIG_LGE_ATS_UEVENT_DEVICE) += lge_ats_uevent.o
 obj-$(CONFIG_LGE_ATS_INPUT_DEVICE) += lge_ats_input.o
 #obj-$(CONFIG_LGE_DIAG_WMC) += lg_diag_wmc.o
-#obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_flex.o # LGE_CHANGE [irene.park@lge.com] 2010-06-04 - to get flex value from ARM9 
-#obj-$(CONFIG_LGE_PWRSINK) += lge_pwrsink.o
+obj-$(CONFIG_LGE_SUPPORT_AT_CMD) += lge_ats_flex.o # LGE_CHANGE [irene.park@lge.com] 2010-06-04 - to get flex value from ARM9
+obj-$(CONFIG_LGE_PWRSINK) += lge_pwrsink.o
 #obj-$(CONFIG_LGE_FACTORY_PATCH) += lge_temp.o lge_mtd_direct_access.o
 
 #from .38

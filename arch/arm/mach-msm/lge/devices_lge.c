@@ -35,10 +35,6 @@
 #include <mach/rpc_hsusb.h>
 #include <mach/rpc_pmapp.h>
 #include <linux/android_pmem.h>
-#ifdef CONFIG_USB_FUNCTION
-#include <linux/usb/mass_storage_function.h>
-#include <linux/usb/android_composite.h>
-#endif
 #ifdef CONFIG_USB_G_ANDROID
 #include <linux/usb/android.h>
 #include <mach/usbdiag.h>
@@ -424,7 +420,6 @@ static struct platform_device android_usb_device = {
 		.platform_data = &android_usb_pdata,
 	},
 };
-
 #endif
 
 #ifdef CONFIG_USB_EHCI_MSM_72K
@@ -439,6 +434,7 @@ static void msm_hsusb_vbus_power(unsigned phy_info, int on)
 static struct msm_usb_host_platform_data msm_usb_host_pdata = {
 	.phy_info       = (USB_PHY_INTEGRATED | USB_PHY_MODEL_65NM),
 };
+
 static void __init msm7x2x_init_host(void)
 {
 	if (machine_is_msm7x25_ffa() || machine_is_msm7x27_ffa())
@@ -459,13 +455,12 @@ static int hsusb_rpc_connect(int connect)
 #endif
 
 #ifdef CONFIG_USB_MSM_OTG_72K
-struct vreg *vreg_3p3;
 static int msm_hsusb_ldo_init(int init)
 {
-//	static struct regulator *reg_hsusb;
-//	int rc;
+	static struct regulator *reg_hsusb;
+	int rc;
 	if (init) {
-/*		reg_hsusb = regulator_get(NULL, "usb");
+		reg_hsusb = regulator_get(NULL, "usb");
 		if (IS_ERR(reg_hsusb)) {
 			rc = PTR_ERR(reg_hsusb);
 			pr_err("%s: could not get regulator: %d\n",
@@ -486,7 +481,7 @@ static int msm_hsusb_ldo_init(int init)
 					__func__, rc);
 			goto usb_reg_fail;
 		}
-*/
+
 		/*
 		 * PHY 3.3V analog domain(VDDA33) is powered up by
 		 * an always enabled power supply (LP5900TL-3.3).
@@ -496,29 +491,21 @@ static int msm_hsusb_ldo_init(int init)
 		 * off here.
 		 */
 
-		vreg_3p3 = vreg_get(NULL, "usb");
-		if (IS_ERR(vreg_3p3))
-			return PTR_ERR(vreg_3p3);
-		vreg_enable(vreg_3p3);
-		vreg_disable(vreg_3p3);
-		vreg_put(vreg_3p3);
-
-
-/*		rc = regulator_disable(reg_hsusb);
+		rc = regulator_disable(reg_hsusb);
 		if (rc < 0) {
 			pr_err("%s: could not disable regulator: %d\n",
 					__func__, rc);
 			goto usb_reg_fail;
 		}
 
-		regulator_put(reg_hsusb);*/
+		regulator_put(reg_hsusb);
 	}
 
 	return 0;
-/*usb_reg_fail:
+usb_reg_fail:
 	regulator_put(reg_hsusb);
 out:
-	return rc;*/
+	return rc;
 }
 
 static int msm_hsusb_pmic_notif_init(void (*callback)(int online), int init)
@@ -534,28 +521,23 @@ static int msm_hsusb_pmic_notif_init(void (*callback)(int online), int init)
 	return ret;
 }
 
+/*
 static int msm_otg_rpc_phy_reset(void __iomem *regs)
 {
 	return msm_hsusb_phy_reset();
 }
+*/
 
 static struct msm_otg_platform_data msm_otg_pdata = {
-	.rpc_connect    	= hsusb_rpc_connect,
-#ifdef CONFIG_ARCH_MSM7X27
-	/* LGE_CHANGE
-	 * To reset USB LDO, use RPC(only msm7x27).
-	 * 2011-01-12, hyunhui.park@lge.com
-	 */
-	.phy_reset			= msm_otg_rpc_phy_reset,
-#endif
+	.rpc_connect		= hsusb_rpc_connect,
 	.pmic_vbus_notif_init	= msm_hsusb_pmic_notif_init,
-	.chg_vbus_draw      = hsusb_chg_vbus_draw,
-	.chg_connected      = hsusb_chg_connected,
-	.chg_init        	= hsusb_chg_init,
+	.chg_vbus_draw		= hsusb_chg_vbus_draw,
+	.chg_connected		= hsusb_chg_connected,
+	.chg_init		= hsusb_chg_init,
 #ifdef CONFIG_USB_EHCI_MSM_72K
-	.vbus_power = msm_hsusb_vbus_power,
+	.vbus_power		= msm_hsusb_vbus_power,
 #endif
-	.ldo_init       = msm_hsusb_ldo_init,
+	.ldo_init		= msm_hsusb_ldo_init,
 	.pclk_required_during_lpm = 1,
 };
 
@@ -607,16 +589,8 @@ void __init msm_add_usb_devices(void)
 
 #ifdef CONFIG_USB_MSM_OTG_72K
 	msm_device_otg.dev.platform_data = &msm_otg_pdata;
-	if (machine_is_msm7x25_surf() || machine_is_msm7x25_ffa()) {
-		msm_otg_pdata.pemp_level =
-			PRE_EMPHASIS_WITH_20_PERCENT;
-		msm_otg_pdata.drv_ampl = HS_DRV_AMPLITUDE_5_PERCENT;
-		msm_otg_pdata.cdr_autoreset = CDR_AUTO_RESET_ENABLE;
-		msm_otg_pdata.phy_reset = msm_otg_rpc_phy_reset;
-	}
-	if (machine_is_msm7x27_surf() || machine_is_msm7x27_ffa()) {
-		msm_otg_pdata.pemp_level =
-			PRE_EMPHASIS_WITH_10_PERCENT;
+	if (true) {
+		msm_otg_pdata.pemp_level = PRE_EMPHASIS_WITH_10_PERCENT;
 		msm_otg_pdata.drv_ampl = HS_DRV_AMPLITUDE_5_PERCENT;
 		msm_otg_pdata.cdr_autoreset = CDR_AUTO_RESET_DISABLE;
 		msm_otg_pdata.phy_reset_sig_inverted = 1;
