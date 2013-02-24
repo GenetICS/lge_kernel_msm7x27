@@ -23,20 +23,22 @@
 #include "board-thunderg.h"
 #include "../board-msm7627-regulator.h"
 
-//#define MSM_FB_LCDC_VREG_OP(name, op, level)			\
-//do { \
-//	vreg = vreg_get(0, name); \
-//	vreg_set_level(vreg, level); \
-//	if (vreg_##op(vreg)) \
-//		printk(KERN_ERR "%s: %s vreg operation failed \n", \
-//		(vreg_##op == vreg_enable) ? "vreg_enable" \
-//			: "vreg_disable", name); \
-//} while (0)
+/*
+#define MSM_FB_LCDC_VREG_OP(name, op, level)			\
+do { \
+	vreg = vreg_get(0, name); \
+	vreg_set_level(vreg, level); \
+	if (vreg_##op(vreg)) \
+		printk(KERN_ERR "%s: %s vreg operation failed \n", \
+		(vreg_##op == vreg_enable) ? "vreg_enable" \
+			: "vreg_disable", name); \
+} while (0)
 
-//static char *msm_fb_vreg[] = {
-//	"gp1",
-//	"gp2",
-//};
+static char *msm_fb_vreg[] = {
+	"gp1",
+	"gp2",
+};
+*/
 
 static int mddi_power_save_on;
 static int msm_fb_mddi_power_save(int on)

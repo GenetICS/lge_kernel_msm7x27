@@ -261,7 +261,7 @@ static int atcmd_tty_chars_in_buffer(struct tty_struct *tty)
 	return n_read;
 }
 
-static int atcmd_tty_tiocmget(struct tty_struct *tty, struct file *file)
+static int atcmd_tty_tiocmget(struct tty_struct *tty)
 {
 #if 0
 	struct atcmd_tty_info *info = tty->driver_data;
@@ -295,8 +295,7 @@ static int atcmd_tty_tiocmget(struct tty_struct *tty, struct file *file)
 	return status;
 }
 
-static int atcmd_tty_tiocmset(struct tty_struct *tty, struct file *file,
-		unsigned int set, unsigned int clear)
+static int atcmd_tty_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
 {
 #if 0
 	struct atcmd_tty_info *info = tty->driver_data;
