@@ -27,7 +27,6 @@
 #include <typedefs.h>
 #include <osl.h>
 #include <bcmsdh.h>
-#include <linux/sched.h>
 
 #ifdef BCMEMBEDIMAGE
 #include BCMEMBEDIMAGE

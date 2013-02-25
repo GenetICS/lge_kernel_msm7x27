@@ -715,7 +715,7 @@ dhd_hostwakeup_isr(int irq, void *dev_id)
 	gpio_set_value(GPIO_WLAN_HOST_WAKE, 0);
 /* LGE_CHANGE_S [yoohoo@lge.com] 2009-11-06, Support Host Wakeup */
 #if !defined(CONFIG_LGE_BCM432X_PATCH)
-	set_irq_type(dhd_wifi_sleep->host_wake_irq, gpio ? IRQF_TRIGGER_LOW : IRQF_TRIGGER_HIGH);
+	irq_set_irq_type(dhd_wifi_sleep->host_wake_irq, gpio ? IRQF_TRIGGER_LOW : IRQF_TRIGGER_HIGH);
 #endif /* CONFIG_LGE_BCM432X_PATCH */
 /* LGE_CHANGE_E [yoohoo@lge.com] 2009-11-06, Support Host Wakeup */
 	if (!gpio) {
@@ -807,15 +807,15 @@ dhd_register_hwakeup(void)
 		printk (KERN_ERR "[yoohoo] dhd_register_hwakeup : OK\n");
 	}
 
-/* LGE_CHANGE_S [yoohoo@lge.com] 2009-11-19, set_irq_type and disable_irq */
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-11-19, irq_set_irq_type and disable_irq */
 #if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
-//	set_irq_type(dhd_wifi_sleep->host_wake_irq, IRQ_TYPE_EDGE_BOTH);
+//	irq_set_irq_type(dhd_wifi_sleep->host_wake_irq, IRQ_TYPE_EDGE_BOTH);
 	irq_set_irq_type(dhd_wifi_sleep->host_wake_irq, IRQ_TYPE_EDGE_RISING);
 #if	defined(CONFIG_BRCM_GPIO_INTR)
 	disable_irq(dhd_wifi_sleep->host_wake_irq);
 #endif /* CONFIG_BRCM_GPIO_INTR */
 #endif /* CONFIG_BRCM_LGE_WL_HOSTWAKEUP */
-/* LGE_CHANGE_E [yoohoo@lge.com] 2009-11-19, set_irq_type and disable_irq */
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-11-19, irq_set_irq_type and disable_irq */
 	return ret;
 }
 

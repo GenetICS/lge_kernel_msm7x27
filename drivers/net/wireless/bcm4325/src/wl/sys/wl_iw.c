@@ -602,7 +602,7 @@ wl_iw_get_macaddr(
 	return error;
 }
 
-//#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD)
 /* LGE_CHANGE_s, [jisung.yang@lge.com], 2010-08-24, <Set listen interval and dtim listen> */
 uint wl_dtim_val = 0;		//by sjpark 100824
 
@@ -711,7 +711,7 @@ wl_iw_set_hostip(
     return 0;
 }
 #endif
-//#endif	/* defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD) */
+#endif	/* defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD) */
 
 
 static int
@@ -914,6 +914,9 @@ wl_iw_get_link_speed(
 /* MOD 0005568: [WLAN] Wi-Fi will be disconnected if the RSSI value is lower than -92 */
 int less_than_rssi = 0;
 /* END: 0005568 mingi.sung@lge.com 2010-03-27 */
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+int wl_dtim_set = 0;
+#endif
 static int
 wl_iw_get_rssi(
 	struct net_device *dev,
@@ -967,6 +970,12 @@ wl_iw_get_rssi(
  * <some ssid use '<' character sometimes and it cause response discard
  * in wpa_supplicant (wpa_ctrl_request())> */
 	
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+        if (wl_dtim_set && rssi < 0){
+                wl_iw_set_dtim_val(dev);        //by sjpark 10-12-15
+                wl_dtim_set = 0 ;
+        }
+#endif
 /* BEGIN: 0005568 mingi.sung@lge.com 2010-03-27 */
 /* MOD 0005568: [WLAN] Wi-Fi will be disconnected if the RSSI value is lower than -92 */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
@@ -991,7 +1000,7 @@ wl_iw_get_rssi(
 	return error;
 }
 
-static int
+int
 wl_iw_send_priv_event(
 	struct net_device *dev,
 	char *evntmsg
@@ -1622,7 +1631,9 @@ static int iwpriv_set_ap_config(struct net_device *dev,
 	}
 
 
-	set_ap_cfg(dev, ap_cfg);
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
+	res = set_ap_cfg(dev, ap_cfg);
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
 	kfree(extra);
 
 	return res;
@@ -4881,11 +4892,10 @@ wl_iw_set_powermode(
 	if (sscanf(extra, "%*s %d", &mode) != 1)
 		return -EINVAL;
 
-	switch (mode) {
-	case 0: mode = 2; break; /* Fast PS mode */
-	case 1: mode = 0; break; /* No PS mode */
-	default: return -EINVAL;
-	}
+	/* inspired by mik_os [kiril.mik.os@gmail.com]:
+	   force to use powersave mode  -- IHO */
+	mode = 2; /* 2 = Fast PS mode, 0 = No PS mode */
+
 	error = dev_wlc_ioctl(dev, WLC_SET_PM, &mode, sizeof(mode));
 	p += snprintf(p, MAX_WX_STRING, error < 0 ? "FAIL\n" : "OK\n");
 	wrqu->data.length = p - extra + 1;
@@ -5308,11 +5318,16 @@ static int get_softap_auto_channel(struct net_device *dev, struct ap_profile *ap
 
                         ret = dev_wlc_ioctl(dev, WLC_GET_CHANNEL_SEL, &chosen, sizeof(chosen));
                         if (ret < 0 || dtoh32(chosen) == 0) {
-                                if (retry++ < 3)
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
+                                if (retry++ < 5)
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
                                         goto get_channel_retry;
                                 else {
                                         WL_ERROR(("can't get auto channel sel, err = %d, \
                                                 chosen = %d\n", ret, chosen));
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
+					res = -1;
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
                                         goto fail;
                                 }
                         }
@@ -5435,7 +5450,9 @@ static int set_ap_cfg(struct net_device *dev, struct ap_profile *ap)
 
 	WL_SOFTAP(("~~~~START SET AUTO CHANNEL~~~~[channel = %d]\n",ap->channel ));	//by sjpark 100818
 
-	ap->channel = 0;	//by sjpakr 100819 : for set auto channel
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
+//	ap->channel = 0;	//by sjpakr 100819 : for set auto channel
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
 	if ((ap->channel == 0) && (get_softap_auto_channel(dev, ap) < 0)) {
 		ap->channel = 1;
 		WL_ERROR(("%s auto channel failed, pick up channel=%d\n", \
@@ -6110,7 +6127,9 @@ int wl_iw_process_private_ascii_cmd(
 				WL_ERROR(("ERROR: SoftAP CFG prams !\n"));
 				ret = -1;
 		} else {
-			set_ap_cfg(dev, &my_ap);
+/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
+			ret = set_ap_cfg(dev, &my_ap);
+/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-11-01, <Error case of failing auto channel> */
 		}
 
 	} else if (strnicmp(sub_cmd, "AP_BSS_START", strlen("AP_BSS_START")) == 0) {
@@ -6256,7 +6275,7 @@ static int wl_iw_set_priv(
 #if 0
 	    else if (strnicmp(extra, "IPADDR", strlen("IPADDR")) == 0)
 			ret = wl_iw_set_hostip(dev, info, (union iwreq_data *)dwrq, extra);
-#endif
+#endif		
 #endif	/* defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && defined(CONFIG_BRCM_LGE_WL_ARPOFFLOAD) */
 	    else if (strnicmp(extra, "STOP", strlen("STOP")) == 0)
 			ret = wl_iw_control_wl_off(dev, info);
@@ -6369,7 +6388,7 @@ static int wl_iw_set_priv(
 #endif	/* CONFIG_BRCM_LGE_WL_HOSTWAKEUP_IOCTL */
 /* LGE_CHANGE_E [yoohoo@lge.com] 2009-05-14, support private command */ 
 	    else {
-			printk("Unkown PRIVATE command , ignored (%s)\n", extra); /* yoohoo */
+			//printk("Unkown PRIVATE command , ignored (%s)\n", extra); /* yoohoo */
 			snprintf(extra, MAX_WX_STRING, "OK");
 			dwrq->length = strlen("OK") + 1;
 			WL_ERROR(("Unkown PRIVATE command , ignored\n"));
@@ -6995,6 +7014,9 @@ wl_iw_event(struct net_device *dev, wl_event_msg_t *e, void* data)
 		memcpy(wrqu.addr.sa_data, &e->addr, ETHER_ADDR_LEN);
 		wrqu.addr.sa_family = ARPHRD_ETHER;
 		cmd = IWEVREGISTERED;
+#if defined(CONFIG_LGE_BCM432X_PATCH)
+                wl_dtim_set = 1 ;
+#endif
 		break;
 	case WLC_E_DEAUTH_IND:
 	case WLC_E_DISASSOC_IND:
