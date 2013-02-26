@@ -130,7 +130,7 @@ typedef struct dhd_info {
 	/* OS/stack specifics */
 	dhd_if_t *iflist[DHD_MAX_IFS];
 
-	struct semaphore proto_sem;
+	struct mutex proto_sem;
 	wait_queue_head_t ioctl_resp_wait;
 	struct timer_list timer;
 	bool wd_timer_valid;
@@ -139,7 +139,7 @@ typedef struct dhd_info {
 	spinlock_t	txqlock;
 	/* Thread based operation */
 	bool threads_only;
-	struct semaphore sdsem;
+	struct mutex sdsem;
 	long watchdog_pid;
 	struct semaphore watchdog_sem;
 	struct completion watchdog_exited;
@@ -2228,7 +2228,7 @@ dhd_os_proto_block(dhd_pub_t * pub)
 	dhd_info_t * dhd = (dhd_info_t *)(pub->info);
 
 	if (dhd) {
-		down(&dhd->proto_sem);
+		mutex_lock(&dhd->proto_sem);
 		return 1;
 	}
 
@@ -2241,7 +2241,7 @@ dhd_os_proto_unblock(dhd_pub_t * pub)
 	dhd_info_t * dhd = (dhd_info_t *)(pub->info);
 
 	if (dhd) {
-		up(&dhd->proto_sem);
+		mutex_unlock(&dhd->proto_sem);
 		return 1;
 	}
 
@@ -2367,7 +2367,7 @@ dhd_os_sdlock(dhd_pub_t * pub)
 	dhd = (dhd_info_t *)(pub->info);
 
 	if (dhd->threads_only)
-		down(&dhd->sdsem);
+		mutex_lock(&dhd->sdsem);
 	else
 	spin_lock_bh(&dhd->sdlock);
 }
@@ -2380,7 +2380,7 @@ dhd_os_sdunlock(dhd_pub_t * pub)
 	dhd = (dhd_info_t *)(pub->info);
 
 	if (dhd->threads_only)
-		up(&dhd->sdsem);
+		mutex_unlock(&dhd->sdsem);
 	else
 	spin_unlock_bh(&dhd->sdlock);
 }
