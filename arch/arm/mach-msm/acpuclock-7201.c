@@ -499,7 +499,7 @@ static int acpuclk_set_vdd_level(int vdd)
 	       current_vdd, vdd);
 
 	writel_relaxed((1 << 7) | (vdd << 3), A11S_VDD_SVS_PLEVEL_ADDR);
-	mb();
+	//mb();
 	udelay(62);
 	if ((readl_relaxed(A11S_VDD_SVS_PLEVEL_ADDR) & 0x7) != vdd) {
 		pr_err("VDD set failed\n");
@@ -522,6 +522,22 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	clk_div = (reg_clksel >> 1) & 0x03;
 	/* CLK_SEL_SRC1NO */
 	src_sel = reg_clksel & 1;
+
+	// Perform overclocking if requested
+	if(hunt_s->pll==0 && hunt_s->a11clk_khz>600000) {
+		// Change the speed of PLL0
+		writel(hunt_s->a11clk_khz/19200, PLLn_L_VAL(0));
+		//cpu_relax();
+		udelay(50);
+	}
+
+#ifdef CONFIG_MSM7X27_OVERCLOCK
+	// Pump the PLL2 up another 19200kHz (overclock stock 600MHz from 595.2MHz to 604.8MHz)
+	if(hunt_s->pll==2 && hunt_s->a11clk_khz==600000) {
+		writel(63, PLLn_L_VAL(2));
+		udelay(50);
+	}
+#endif
 
 	/*
 	 * If the new clock divider is higher than the previous, then
@@ -687,7 +703,7 @@ static int acpuclk_7627_set_rate(int cpu, unsigned long rate,
 		drv_state.current_speed = cur_s;
 		/* Re-adjust lpj for the new clock speed. */
 		loops_per_jiffy = cur_s->lpj;
-		mb();
+		//mb();
 		udelay(50);
 	}
 
