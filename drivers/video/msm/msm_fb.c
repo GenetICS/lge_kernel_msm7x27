@@ -110,6 +110,14 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg);
 static int msm_fb_mmap(struct fb_info *info, struct vm_area_struct * vma);
 
+#ifdef CONFIG_LGE_GRAM_REFRESH_PATCH
+static struct fb_var_screeninfo *last_var;
+static struct fb_info *last_info;
+static struct early_suspend additional_early_suspend;
+static void msmfb_early_suspend_early(struct early_suspend *h);
+static void msmfb_late_resume_late(struct early_suspend *h);
+#endif
+
 #ifdef MSM_FB_ENABLE_DBGFS
 
 #define MSM_FB_MAX_DBGFS 1024
@@ -741,6 +749,17 @@ static void msmfb_early_resume(struct early_suspend *h)
 						    early_suspend);
 	msm_fb_resume_sub(mfd);
 }
+#ifdef CONFIG_LGE_GRAM_REFRESH_PATCH
+static void msmfb_early_suspend_early(struct early_suspend *h)
+{
+	/* do nothing */
+}
+static void msmfb_late_resume_late(struct early_suspend *h)
+{
+	memset((void *)last_info->screen_base, 0, last_info->fix.smem_len);
+	msm_fb_pan_display(last_var, last_info);
+}
+#endif
 #endif
 
 static int unset_bl_level, bl_updated;
@@ -1376,6 +1395,13 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 		mfd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 2;
 		register_early_suspend(&mfd->early_suspend);
 	}
+#ifdef CONFIG_LGE_GRAM_REFRESH_PATCH
+	additional_early_suspend.suspend = msmfb_early_suspend_early;
+	additional_early_suspend.resume = msmfb_late_resume_late;
+	additional_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 10;
+	register_early_suspend(&additional_early_suspend);
+#endif
+
 #endif
 
 #ifdef MSM_FB_ENABLE_DBGFS
@@ -1577,6 +1603,11 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 	struct mdp_dirty_region *dirtyPtr = NULL;
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 	struct msm_fb_panel_data *pdata;
+
+#ifdef CONFIG_LGE_GRAM_REFRESH_PATCH
+	last_var = var;
+	last_info = info;
+#endif
 
 	/*
 	 * If framebuffer is 1 or 2, io pen display is not allowed.

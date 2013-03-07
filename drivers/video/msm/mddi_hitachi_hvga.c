@@ -563,6 +563,10 @@ static int mddi_hitachi_lcd_on(struct platform_device *pdev)
 		return 0;
 	}
 #endif
+
+	// fix "MDDI RTD Failure" problem
+	mddi_host_client_cnt_reset();
+
 	// LCD HW Reset
 	mddi_hitachi_lcd_panel_poweron();
 #if defined(CONFIG_MACH_MSM7X27_THUNDERG)
