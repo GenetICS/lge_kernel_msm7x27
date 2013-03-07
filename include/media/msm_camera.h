@@ -1,3 +1,6 @@
+#ifdef CONFIG_MSM_CAMERA_LEGACY
+#include "media/msm_camera-legacy.h"
+#else
 /* Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1287,3 +1290,4 @@ struct img_plane_info {
 };
 
 #endif /* __LINUX_MSM_CAMERA_H */
+#endif /* CONFIG_MSM_CAMERA_LEGACY */

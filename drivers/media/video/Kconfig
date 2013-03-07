@@ -1053,6 +1053,14 @@ config MSM_CAMERA_DEBUG
 	help
 	  Enable printk() debug for msm camera
 
+menuconfig MSM_CAMERA_LEGACY
+	bool "Qualcomm MSM legacy camera and video capture support"
+	depends on MSM_CAMERA
+	default y
+	help
+	  Say Y here to use legacy camera drivers for compatibility
+	  with older userspace libraries (msm7x27)
+
 
 source "drivers/media/video/msm/Kconfig"
 
