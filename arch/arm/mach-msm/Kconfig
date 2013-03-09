@@ -1377,12 +1377,19 @@ config MSM_CPU_FREQ_MIN
 	default 245760
 
 config MSM7X27_OVERCLOCK
-	bool "Enable SoC overclocking"
+	bool "Enable SoC overclocking for MSM7x27"
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
-	depends on MACH_MSM7X27_THUNDERG
+	depends on ARCH_MSM7X27
 	default n
 	help
-	  Enable support for non-standard acpuclock frequencies/voltages.
+	  Enable support for non-standard msm7x27 acpuclock frequencies/voltages.
+
+config MSM7X27T_OVERCLOCK
+	bool "Enable SoC overclocking for MSM7x27(TURBO)"
+	select MSM7X27_OVERCLOCK
+	default n
+	help
+	  Enable support for non-standard msmx27(T) acpuclock frequencies/voltages.
 
 endif # CPU_FREQ_MSM
 
