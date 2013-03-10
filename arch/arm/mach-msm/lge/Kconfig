@@ -344,6 +344,16 @@ config LGE_BLUE_ERROR_HANDLER
 	default n
 	help
 	  This feature support crash handler used thunderg
+
+config LGE_POWER_ON_STATUS_PATCH
+	bool "Report power on status of handset"
+	depends on MACH_LGE
+	default n
+	help
+	 This patch is added to read the power on status from modem and update
+	 the same in apps processor's /proc/sys/kernel/boot_reason file.
+	 Ref: Documentation/arcr/arm/msm/boot.txt
+
 endmenu
 
 endmenu

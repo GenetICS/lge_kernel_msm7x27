@@ -467,6 +467,10 @@ unsigned lge_get_nv_qem(void);
 #define CAMERA_POWER_ON				0
 #define CAMERA_POWER_OFF			1
 
+#ifdef CONFIG_LGE_POWER_ON_STATUS_PATCH
+void __init lge_board_pwr_on_status(void);
+#endif
+
 typedef void (gpio_i2c_init_func_t)(int bus_num);
 int __init init_gpio_i2c_pin(struct i2c_gpio_platform_data *i2c_adap_pdata,
 		struct gpio_i2c_pin gpio_i2c_pin,
