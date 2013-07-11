@@ -47,10 +47,27 @@
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 #include <asm/setup.h>
 #endif
+#ifdef CONFIG_LGE_POWER_ON_STATUS_PATCH
+#include "../smd_private.h"
+#include <asm/processor.h>
+#endif
 #include <mach/board_lge.h>
 #include "../devices.h"
 #include "../pm.h"
 #include <mach/socinfo.h>
+
+
+#ifdef CONFIG_LGE_POWER_ON_STATUS_PATCH
+void __init lge_board_pwr_on_status(void)
+{
+	unsigned smem_size;
+	boot_reason = *(unsigned int *)
+		(smem_get_entry(SMEM_POWER_ON_STATUS_INFO, &smem_size));
+	printk(KERN_NOTICE "Boot Reason = 0x%02x\n", boot_reason);
+}
+#endif /* CONFIG_LGE_POWER_ON_STATUS_PATCH*/
+
+
 /* setting board revision information */
 int lge_bd_rev;
 
